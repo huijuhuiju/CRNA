@@ -7,7 +7,10 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 const loginDomain = "crna-61e20.firebaseapp.com";
-const authEmail = (employeeNo) => `${String(employeeNo).trim().toLowerCase()}@${loginDomain}`;
+const authEmail = (account) => {
+  const value = String(account).trim();
+  return value.includes("@") ? value : `${value.toLowerCase()}@${loginDomain}`;
+};
 const roleText = (role) => ({ staff: "麻醉專師", director: "技術主任", admin: "系統管理者" }[role] || role);
 
 async function profileFor(uid) {
