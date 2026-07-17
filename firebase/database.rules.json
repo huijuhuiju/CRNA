@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+    "applications": {
+      ".read": "auth != null",
+      "$applicationId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.child('applicantId').val() === auth.uid) || (data.child('applicantId').val() === auth.uid && data.child('status').val() === 'pending'))"
+      }
+    },
+    "courseSchedules": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+    }
+  }
+}
