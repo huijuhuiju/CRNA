@@ -1,0 +1,1 @@
+.check-list li:has(.check-dot.bad){background:#fff0ee;border:1px solid #e4aaa4;border-left:4px solid #ae332c;color:#7f1f1a;padding:9px 10px;border-radius:6px;font-weight:700}.check-dot.bad{background:#ae332c!important;color:#fff!important;box-shadow:0 0 0 2px #f7d2ce}.check-list li:has(.check-dot.ok){color:#2b6242}.check-list li:has(.check-dot.neutral){color:#57675d}

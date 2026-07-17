@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>麻醉部｜長假預約</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="extras.css" />
+  <link rel="stylesheet" href="overrides.css" />
+  <link rel="stylesheet" href="accessibility.css" />
+  <link rel="stylesheet" href="modal.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">A</span><div><strong>麻醉部</strong><small>長假預約系統</small></div></div>
+      <nav aria-label="主要選單">
+        <button class="nav-link active" data-view="apply"><span>＋</span>提出申請</button>
+        <button class="nav-link" data-view="mine"><span>▣</span>我的申請</button>
+        <button id="review-nav" class="nav-link" data-view="director"><span>◫</span>待審狀態</button>
+        <button class="nav-link" data-view="rules"><span>i</span>規範與設定</button>
+      </nav>
+      <nav class="secondary-nav" aria-label="Additional functions">
+        <button class="nav-link" data-view="calendar" data-title="預約狀態"><span>▦</span>預約狀態（只供查閱）</button>
+        <button id="access-nav" class="nav-link" data-view="access" data-title="帳號與資料串接"><span>◉</span>帳號與串接</button>
+      </nav>
+      <div class="sidebar-footer"><span id="session-avatar" class="avatar">王</span><div><strong id="session-name">王小美</strong><small id="session-role">麻醉專師</small></div></div>
+    </aside>
+
+    <main>
+      <header class="topbar"><div><p class="eyebrow">TAMSUI · ANESTHESIA</p><h1 id="page-title">提出長假申請</h1></div><div class="session-area"><div class="year-pill">院方年度 <strong id="fiscal-year-label">115 年度</strong></div><button id="session-login" class="outline-button">登入</button><button id="session-logout" class="outline-button hidden">登出</button></div></header>
+
+      <section class="view active" id="apply-view">
+        <div class="hero-card"><div><p class="eyebrow">LONG-LEAVE RESERVATION</p><h2>先預約，排班時再確認</h2><p>預約不代表一定核准；最終結果依正式班表與當月人力狀況決定。</p></div><div class="hero-stat"><b>2</b><span>每梯最多人數</span></div></div>
+        <div class="two-column">
+          <form id="leave-form" class="card form-card">
+            <div class="section-heading"><div><p class="eyebrow">NEW REQUEST</p><h2>長假資料</h2></div><span class="required-note">* 必填</span></div>
+            <label>申請方案 *<select id="plan" required><option value="one">方案一｜5–9 天（每年度 2 次）</option><option value="two">方案二｜10–17 天（每年度 1 次）</option></select></label>
+            <div class="form-grid"><label>開始日期 *<input id="start-date" type="date" required /></label><label>結束日期 *<input id="end-date" type="date" required /></label></div>
+            <div class="calculation" id="calculation"><span>請選擇日期以計算長假天數</span></div>
+            <label>備註 <textarea id="note" rows="3" placeholder="選填，例如旅遊安排或需注意事項"></textarea></label>
+            <div class="checkbox-row"><input id="cv1-check" type="checkbox" /><label for="cv1-check">我已確認本次長假不與 CV1 course 衝突</label></div>
+            <div id="form-alert" class="form-alert hidden" role="alert"></div>
+            <button class="primary-button" type="submit">送出預約申請 <span>→</span></button>
+          </form>
+
+          <div class="right-stack">
+            <section class="card rules-card"><div class="section-heading"><div><p class="eyebrow">AUTOMATIC CHECK</p><h2>送件前檢核</h2></div></div><ul id="check-list" class="check-list"><li><span class="check-dot neutral"></span><span>選擇日期後將檢查所有規則</span></li></ul></section>
+            <section class="deadline-card"><span class="calendar-icon">□</span><div><strong>送件截止日</strong><p id="deadline-copy">休假月份前三個曆月最後一日 23:59 前</p></div></section>
+            <section class="notice-card"><strong>天數計算提醒</strong><p>含週六日及員工旅遊；不含農曆年與院方公告連續 4 日以上假期。婚假不列入長假天數。</p></section>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="mine-view">
+        <div class="section-heading page-heading"><div><p class="eyebrow">MY REQUESTS</p><h2>我的長假申請</h2></div><button class="outline-button" data-view-target="apply">＋ 新增申請</button></div>
+        <div id="my-summary" class="summary-row"></div>
+        <div class="card table-card"><table><thead><tr><th>提出日期</th><th>休假日期</th><th>方案</th><th>天數</th><th>狀態</th><th>操作</th></tr></thead><tbody id="my-applications"></tbody></table></div>
+      </section>
+
+      <section class="view" id="director-view">
+        <div class="section-heading page-heading"><div><h2 id="review-heading">審查狀態</h2><p>依正式班表與當月人力狀況進行最終確認。</p></div><button id="run-lottery" class="outline-button manager-only">執行本梯抽籤</button></div>
+        <div class="dashboard-grid"><article class="metric"><span>待處理申請</span><b id="pending-count">0</b><small>含取消申請</small></article><article class="metric"><span>已核准</span><b id="approved-count">0</b><small>本院方年度</small></article><article class="metric"><span>需抽籤梯次</span><b id="lottery-count">0</b><small>超過 2 人</small></article><article class="metric"><span>正式班待確認</span><b id="confirmed-count">0</b><small>已核准長假</small></article></div>
+        <section id="manager-assist" class="card manager-assist manager-only"><h3>協助人員提出申請</h3><form id="manager-request-form" class="compact-form"><select id="manager-person"><option value="u2">林安琪</option><option value="u3">陳怡君</option><option value="u4">張雅雯</option></select><select id="manager-plan"><option value="one">方案一（5–9 天）</option><option value="two">方案二（10–17 天）</option></select><input id="manager-start" type="date" required /><input id="manager-end" type="date" required /><button class="primary-button" type="submit">代為送出申請</button></form></section>
+        <div id="review-table" class="card table-card director-table"><table><thead><tr><th>申請人</th><th>日期</th><th>方案 / 天數</th><th>梯次人數</th><th>狀態</th><th class="manager-only">處理</th></tr></thead><tbody id="director-applications"></tbody></table></div>
+        <p class="muted">「梯次」以有重疊日期的申請群組判定。抽籤結果與主任處理結果均會記錄於稽核軌跡。</p>
+      </section>
+
+      <section class="view" id="rules-view">
+        <div class="section-heading page-heading"><div><p class="eyebrow">POLICY CONFIGURATION</p><h2>規範與系統設定</h2></div></div>
+        <div class="rules-layout"><section class="card policy"><h3>長假規範</h3><ol><li>資格為任職滿 3 個月或試用期已滿。</li><li>院方年度為每年 7 月 1 日至次年 6 月 30 日。</li><li>方案一：5–9 天、每年度 2 次，且分別限 7–12 月與 1–6 月。</li><li>方案二：10–17 天、每年度 1 次；同年度僅能二擇一。</li><li>每梯以 2 人為限；超額以抽籤決定。</li><li>不可與 CV1 course 衝突；最終以正式班表為準。</li></ol></section><section class="card policy"><h3>送件時限</h3><p>每個休假月份均須在該月前三個曆月的最後一日 23:59 前送件。</p><div class="example-box"><strong>範例</strong><br>10 月長假，截止日為 7 月 31 日 23:59。</div><button id="reset-demo" class="text-button">重設示範資料</button></section></div>
+      </section>
+      <section class="view" id="calendar-view"><div class="calendar-toolbar"><button id="calendar-prev" class="outline-button">←</button><strong id="calendar-title">預約狀態</strong><button id="calendar-next" class="outline-button">→</button><select id="calendar-mode"><option value="month">月曆</option><option value="year">年曆</option></select></div><div class="calendar-legend"><span><i class="legend-dot pending"></i>待審核</span><span><i class="legend-dot approved"></i>已核准</span><span><i class="legend-dot lottery"></i>抽籤待定</span></div><div id="calendar-grid" class="calendar-grid"></div></section>
+      <section class="view" id="access-view"><div class="section-heading page-heading"><div><p class="eyebrow">ACCESS · PEOPLE · INTEGRATION</p><h2>帳號、CV course 與資料串接</h2></div></div><div class="integration-grid"><section class="card integration-card"><p class="eyebrow">ACCOUNT MANAGEMENT</p><h3>主管級與人員帳號</h3><form id="account-form" class="compact-form"><input id="account-name" placeholder="姓名" required /><input id="account-id" placeholder="登入帳號" required /><select id="account-role"><option value="staff">麻醉專師</option><option value="director">技術主任</option><option value="admin">系統管理者</option></select><input id="account-password" type="password" placeholder="初始密碼" required /><button class="primary-button" type="submit">建立帳號</button></form><div id="account-list" class="account-list"></div></section><section class="card integration-card"><p class="eyebrow">CV COURSE SCHEDULE</p><h3>CV course 班表上傳</h3><label class="upload-box" for="course-file"><strong>選擇班表檔案</strong><small>支援 .xlsx、.csv</small></label><input id="course-file" type="file" accept=".xlsx,.csv" hidden /><p id="course-file-status" class="muted">尚未選擇檔案</p></section><section class="card integration-card"><p class="eyebrow">PERSON LOOKUP</p><h3>人員查詢介面</h3><input id="person-search" placeholder="輸入姓名或員工編號" /><div id="person-results" class="person-results"><p class="muted">可查詢任職日、試用狀態、長假紀錄與權限。</p></div></section><section class="card integration-card connection-card"><p class="eyebrow">DATABASE CONNECTION</p><h3>資料庫連結狀態</h3><div class="connection-status"><i></i><div><strong>原型模式：瀏覽器本機資料</strong><small>正式版待串接 Supabase／院內資料庫</small></div></div></section></div></section>
+    </main>
+  </div>
+  <div id="login-panel" class="login-panel"><div class="login-card"><span class="brand-mark">A</span><p class="eyebrow">ANESTHESIA LONG-LEAVE</p><h2>長假預約系統</h2><p>請以系統帳密登入。</p><form id="login-form"><label>登入帳號<input id="login-id" value="staff" required /></label><label>密碼<input id="login-password" type="password" value="123456" required /></label><button class="primary-button" type="submit">登入系統</button></form><small>原型帳號：staff／123456 或 director／123456</small></div></div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="manager-confirm-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="manager-confirm-title"><div class="confirm-card"><p class="eyebrow">APPLICATION REVIEW</p><h2 id="manager-confirm-title">請確認代送申請</h2><div id="manager-confirm-summary" class="confirm-summary"></div><p class="muted">此申請將以待審狀態送出；未通過檢核時會在狀態欄保留標示。</p><div class="confirm-actions"><button id="manager-cancel" class="outline-button" type="button">返回修改</button><button id="manager-confirm" class="primary-button" type="button">確認</button></div></div></div>
+  <script src="app.js"></script>
+</body>
+</html>

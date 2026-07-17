@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function currentUser() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isManager() {
+      return signedIn() && currentUser().data.role in ['director', 'admin'];
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isManager();
+    }
+
+    match /applications/{applicationId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.applicantId == request.auth.uid;
+      allow update: if isManager()
+        || (signedIn() && resource.data.applicantId == request.auth.uid
+            && resource.data.status == 'pending');
+      allow delete: if isManager();
+    }
+
+    match /applicationStatusHistory/{historyId} {
+      allow read: if signedIn();
+      allow create: if isManager();
+      allow update, delete: if false;
+    }
+
+    match /courseSchedules/{courseId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isManager();
+    }
+  }
+}
