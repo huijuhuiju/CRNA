@@ -35,3 +35,6 @@
 .mini-calendar .has-event.lottery.person-tone-2 { background: #f0f1fa; color: #6863a3; }
 .mini-calendar .has-event.lottery.person-tone-3 { background: #ccd1eb; color: #403c75; }
 .mini-calendar .has-event.lottery.person-tone-4 { background: #e0e3f3; color: #514c8b; }
+
+/* 月曆的預約列軌固定，讓跨日申請不會在中途往上跳列。 */
+.calendar-event-lanes{display:grid;gap:3px}.calendar-event-lanes .calendar-event{margin:0}.calendar-event-placeholder{display:block;min-height:18px}
