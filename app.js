@@ -10,6 +10,8 @@ let apps = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || sampleAppl
 let leaveHistory = [];
 
 const $ = (s) => document.querySelector(s);
+function addCollapsibleData(container, title){if(!container||container.parentElement?.classList.contains('data-disclosure'))return;const details=document.createElement('details'),summary=document.createElement('summary');details.className='data-disclosure';summary.textContent=title;details.append(summary);container.parentNode.insertBefore(details,container);details.append(container);}
+setTimeout(()=>{addCollapsibleData($('#account-list'),'展開人員帳號資料');const cvStatus=$('#course-file-status'),cvInput=$('#course-file'),cvLabel=cvInput?.previousElementSibling;if(cvStatus&&cvInput&&cvLabel&&!cvStatus.parentElement?.classList.contains('data-disclosure')){const details=document.createElement('details'),summary=document.createElement('summary');details.className='data-disclosure';summary.textContent='CV course 班表上傳';cvStatus.parentNode.insertBefore(details,cvLabel);details.append(summary,cvLabel,cvInput,cvStatus);}},0);
 const dateInput = $('#start-date'); const endInput = $('#end-date'); const planInput = $('#plan');
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(apps)); if(window.firebaseBackend?.enabled) window.firebaseBackend.syncApplications(apps).then(()=>window.firebaseBackend.syncLeaveHistory(apps)).catch(error=>console.error('Firebase 同步失敗：',error)); }
 function parseDate(s) { return new Date(`${s}T00:00:00`); }
