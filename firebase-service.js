@@ -21,15 +21,26 @@ async function profileFor(uid) {
 }
 
 async function loadData() {
-  const [userData, applicationData, calendarData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null }))]);
+  const [userData, applicationData, calendarData, historyData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null }))]);
   const users = userData.val() || {}, applications = applicationData.val() || {};
-  return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null };
+  return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null, leaveHistory: Object.entries(historyData.val() || {}).map(([id, data]) => ({ id, ...data })) };
 }
 
 async function syncApplications(applications) {
   if (!auth.currentUser) return;
   const changes = {};
   applications.forEach((application) => { const { id, ...data } = application; changes[`applications/${id}`] = { ...data, updatedAt: new Date().toISOString() }; });
+  await update(ref(database), changes);
+}
+
+async function syncLeaveHistory(applications) {
+  const approved = applications.filter((application) => application.status === "approved");
+  if (!approved.length) return;
+  const users = (await get(ref(database, "users"))).val() || {}, changes = {};
+  approved.forEach((application) => {
+    const person = users[application.userId] || {};
+    changes[`leaveHistory/${application.id}`] = { userId: application.userId, name: application.user || person.name || "未設定", employeeNo: person.employeeNo || "", plan: application.plan, start: application.start, end: application.end, days: application.days, approvedAt: application.approvedAt || application.updatedAt || new Date().toISOString(), source: "system" };
+  });
   await update(ref(database), changes);
 }
 
@@ -57,5 +68,5 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
   return results;
 }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, createEmployee, bulkCreateEmployees };
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees };
 window.dispatchEvent(new Event("firebase-ready"));
