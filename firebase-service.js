@@ -12,7 +12,7 @@ const roleForTitle = (jobTitle) => jobTitle === "技術主任" ? "director" : jo
 const groupForTitle = (jobTitle) => (["麻醉專科護理師", "麻醉訓練專科護理師", "事務員"].includes(jobTitle) ? "clinical" : jobTitle === "護理師" ? "nursing" : jobTitle === "助理員" ? "assistant" : null);
 const roleText = (role) => ({ staff: "人員", director: "技術主任", admin: "系統管理者" }[role] || role);
 const fallbackJobTitle = (employeeNo, role) => String(employeeNo) === "3851" ? "麻醉專科護理師" : roleText(role);
-const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || fallbackJobTitle(data.employeeNo, data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle || fallbackJobTitle(data.employeeNo, data.role)), employedAt: data.employedAt, probationPassed: !!data.probationPassed, active: data.active !== false });
+const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || fallbackJobTitle(data.employeeNo, data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle || fallbackJobTitle(data.employeeNo, data.role)), employedAt: data.employedAt, probationPassed: !!data.probationPassed, employmentStatus: data.employmentStatus || (data.active === false ? "離職" : "在職"), active: data.active !== false });
 
 async function profileFor(uid) {
   const profile = await get(ref(database, `users/${uid}`));
@@ -54,7 +54,7 @@ async function createEmployee({ name, employeeNo, jobTitle, password, employedAt
   let credential;
   try { credential = await createUserWithEmailAndPassword(secondaryAuth, authEmail(employeeNo), password); }
   finally { if (!credential) await signOut(secondaryAuth).catch(() => {}); }
-  const profile = { name, employeeNo, role: roleForTitle(jobTitle), jobTitle, bookingGroup: groupForTitle(jobTitle), employedAt: employedAt || null, probationPassed: !!probationPassed, active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const profile = { name, employeeNo, role: roleForTitle(jobTitle), jobTitle, bookingGroup: groupForTitle(jobTitle), employedAt: employedAt || null, probationPassed: !!probationPassed, employmentStatus: "在職", active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   await set(ref(database, `users/${credential.user.uid}`), profile);
   await signOut(secondaryAuth);
   return credential.user.uid;
@@ -70,5 +70,7 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
   return results;
 }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees };
+async function updateEmploymentStatus(uid, employmentStatus) { const enabled = employmentStatus !== "離職"; await update(ref(database, `users/${uid}`), { employmentStatus, active: enabled, updatedAt: new Date().toISOString() }); }
+
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus };
 window.dispatchEvent(new Event("firebase-ready"));
