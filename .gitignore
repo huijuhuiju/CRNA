@@ -1,6 +1,7 @@
 firebase/service-account*.json
 firebase/seed-data.json
 firebase/bootstrap-director.json
+firebase/staff-import.json
 database/long_leave.db
 node_modules/
 .env
