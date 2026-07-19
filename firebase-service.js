@@ -9,7 +9,7 @@ const database = getDatabase(app);
 const loginDomain = "crna-61e20.firebaseapp.com";
 const authEmail = (account) => { const value = String(account).trim(); return value.includes("@") ? value : `${value.toLowerCase()}@${loginDomain}`; };
 const roleForTitle = (jobTitle) => jobTitle === "技術主任" ? "director" : jobTitle === "系統管理者" ? "admin" : "staff";
-const groupForTitle = (jobTitle) => (["麻醉專科護理師", "麻醉訓練專科護理師"].includes(jobTitle) ? "anesthesia" : jobTitle === "事務員" ? "clerical" : jobTitle === "助理員" ? "assistant" : null);
+const groupForTitle = (jobTitle) => (["麻醉專科護理師", "麻醉訓練專科護理師", "事務員"].includes(jobTitle) ? "clinical" : jobTitle === "護理師" ? "nursing" : jobTitle === "助理員" ? "assistant" : null);
 const roleText = (role) => ({ staff: "人員", director: "技術主任", admin: "系統管理者" }[role] || role);
 const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || roleText(data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle), employedAt: data.employedAt, probationPassed: !!data.probationPassed, active: data.active !== false });
 
