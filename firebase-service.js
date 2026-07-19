@@ -21,7 +21,7 @@ async function profileFor(uid) {
 }
 
 async function loadData() {
-  const [userData, applicationData, calendarData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115"))]);
+  const [userData, applicationData, calendarData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null }))]);
   const users = userData.val() || {}, applications = applicationData.val() || {};
   return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null };
 }
