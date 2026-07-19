@@ -66,7 +66,7 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
     try { await createEmployee(entry); results.push({ employeeNo: entry.employeeNo, ok: true }); }
     catch (error) { results.push({ employeeNo: entry.employeeNo, ok: false, error: error.code || error.message }); }
   }
-  if (hospitalCalendar) await set(ref(database, "settings/hospitalCalendar/115"), { ...hospitalCalendar, updatedAt: new Date().toISOString() });
+  if (hospitalCalendar) await set(ref(database, "settings/hospitalCalendar/115"), { ...hospitalCalendar, updatedAt: new Date().toISOString() }).catch(error => console.warn("行事曆同步未完成，不影響人員帳號匯入", error));
   return results;
 }
 
