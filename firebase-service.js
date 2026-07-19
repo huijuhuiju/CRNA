@@ -71,6 +71,7 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
 }
 
 async function updateEmploymentStatus(uid, employmentStatus) { const enabled = employmentStatus !== "離職"; await update(ref(database, `users/${uid}`), { employmentStatus, active: enabled, updatedAt: new Date().toISOString() }); }
+async function updateEmploymentDates(entries) { const users = (await get(ref(database, "users"))).val() || {}, changes = {}, existing = Object.entries(users); entries.forEach(entry => { const match = existing.find(([, person]) => String(person.employeeNo).toUpperCase() === String(entry.employeeNo).toUpperCase()); if (match && entry.employedAt) changes[`users/${match[0]}/employedAt`] = entry.employedAt; }); await update(ref(database), changes); return { updated: Object.keys(changes).length, total: entries.length }; }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus };
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmploymentDates };
 window.dispatchEvent(new Event("firebase-ready"));
