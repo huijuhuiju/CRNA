@@ -24,7 +24,7 @@ async function profileFor(uid) {
 async function loadData() {
   const [userData, applicationData, calendarData, historyData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null }))]);
   const users = userData.val() || {}, applications = applicationData.val() || {}, currentProfile = users[auth.currentUser?.uid];
-  if (["director", "admin"].includes(currentProfile?.role)) { const hu = Object.entries(users).find(([, profile]) => String(profile.employeeNo) === "3851"); if (hu && hu[1].jobTitle !== "麻醉專科護理師") await update(ref(database), { [`users/${hu[0]}/jobTitle`]: "麻醉專科護理師", [`users/${hu[0]}/bookingGroup`]: "clinical", [`users/${hu[0]}/updatedAt`]: new Date().toISOString() }); }
+  if (["director", "admin"].includes(currentProfile?.role)) { const hu = Object.entries(users).find(([, profile]) => String(profile.employeeNo) === "3851"); if (hu && hu[1].jobTitle !== "麻醉專科護理師") await update(ref(database), { [`users/${hu[0]}/jobTitle`]: "麻醉專科護理師", [`users/${hu[0]}/bookingGroup`]: "clinical", [`users/${hu[0]}/updatedAt`]: new Date().toISOString() }).catch(error => console.warn("職稱同步將於下次主管操作時重試", error)); }
   return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null, leaveHistory: Object.entries(historyData.val() || {}).map(([id, data]) => ({ id, ...data })) };
 }
 
