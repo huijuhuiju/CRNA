@@ -11,7 +11,8 @@ const authEmail = (account) => { const value = String(account).trim(); return va
 const roleForTitle = (jobTitle) => jobTitle === "技術主任" ? "director" : jobTitle === "系統管理者" ? "admin" : "staff";
 const groupForTitle = (jobTitle) => (["麻醉專科護理師", "麻醉訓練專科護理師", "事務員"].includes(jobTitle) ? "clinical" : jobTitle === "護理師" ? "nursing" : jobTitle === "助理員" ? "assistant" : null);
 const roleText = (role) => ({ staff: "人員", director: "技術主任", admin: "系統管理者" }[role] || role);
-const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || roleText(data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle), employedAt: data.employedAt, probationPassed: !!data.probationPassed, active: data.active !== false });
+const fallbackJobTitle = (employeeNo, role) => String(employeeNo) === "3851" ? "麻醉專科護理師" : roleText(role);
+const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || fallbackJobTitle(data.employeeNo, data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle || fallbackJobTitle(data.employeeNo, data.role)), employedAt: data.employedAt, probationPassed: !!data.probationPassed, active: data.active !== false });
 
 async function profileFor(uid) {
   const profile = await get(ref(database, `users/${uid}`));
@@ -22,7 +23,8 @@ async function profileFor(uid) {
 
 async function loadData() {
   const [userData, applicationData, calendarData, historyData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null }))]);
-  const users = userData.val() || {}, applications = applicationData.val() || {};
+  const users = userData.val() || {}, applications = applicationData.val() || {}, currentProfile = users[auth.currentUser?.uid];
+  if (["director", "admin"].includes(currentProfile?.role)) { const hu = Object.entries(users).find(([, profile]) => String(profile.employeeNo) === "3851"); if (hu && hu[1].jobTitle !== "麻醉專科護理師") await update(ref(database), { [`users/${hu[0]}/jobTitle`]: "麻醉專科護理師", [`users/${hu[0]}/bookingGroup`]: "clinical", [`users/${hu[0]}/updatedAt`]: new Date().toISOString() }); }
   return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null, leaveHistory: Object.entries(historyData.val() || {}).map(([id, data]) => ({ id, ...data })) };
 }
 
