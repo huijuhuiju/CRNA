@@ -1,8 +1,8 @@
 /* 同月內，同一申請人維持同一色階；不同申請人以色階區分。 */
 .calendar-event.approved.person-tone-0 { background: #dff0e2; color: #297147; }
-.calendar-event.approved.person-tone-1 { background: #cbe6d2; color: #215f3d; }
+.calendar-event.approved.person-tone-1 { background: #b8dfc4; color: #1b5937; }
 .calendar-event.approved.person-tone-2 { background: #e8f5ea; color: #347c52; }
-.calendar-event.approved.person-tone-3 { background: #badfc5; color: #1d5838; }
+.calendar-event.approved.person-tone-3 { background: #9fcdb0; color: #154d2f; }
 .calendar-event.approved.person-tone-4 { background: #d4edd9; color: #286b46; }
 
 .calendar-event.pending.person-tone-0 { background: #fff1d7; color: #8b6725; }
@@ -19,9 +19,9 @@
 
 /* 年曆日期格沿用月曆中第一筆申請的狀態與申請人色階。 */
 .mini-calendar .has-event.approved.person-tone-0 { background: #dff0e2; color: #297147; }
-.mini-calendar .has-event.approved.person-tone-1 { background: #cbe6d2; color: #215f3d; }
+.mini-calendar .has-event.approved.person-tone-1 { background: #b8dfc4; color: #1b5937; }
 .mini-calendar .has-event.approved.person-tone-2 { background: #e8f5ea; color: #347c52; }
-.mini-calendar .has-event.approved.person-tone-3 { background: #badfc5; color: #1d5838; }
+.mini-calendar .has-event.approved.person-tone-3 { background: #9fcdb0; color: #154d2f; }
 .mini-calendar .has-event.approved.person-tone-4 { background: #d4edd9; color: #286b46; }
 
 .mini-calendar .has-event.pending.person-tone-0 { background: #fff1d7; color: #8b6725; }
