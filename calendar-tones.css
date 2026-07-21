@@ -38,3 +38,4 @@
 
 /* 月曆的預約列軌固定，讓跨日申請不會在中途往上跳列。 */
 .calendar-event-lanes{display:grid;gap:3px}.calendar-event-lanes .calendar-event{margin:0}.calendar-event-placeholder{display:block;min-height:18px}
+.account-select{border:0;background:transparent;padding:2px;text-align:left;color:inherit;font:inherit;cursor:pointer}.account-select:hover strong,.account-select:focus-visible strong{text-decoration:underline}.account-select:focus-visible{outline:2px solid #a8c9b4;border-radius:5px}.account-select:disabled{cursor:default}.account-status-label{display:block}.account-status-label select{width:100%;margin-top:4px}.compact-form #cancel-account-edit{margin:0}
