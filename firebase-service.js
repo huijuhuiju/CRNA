@@ -22,10 +22,11 @@ async function profileFor(uid) {
 }
 
 async function loadData() {
-  const [userData, applicationData, calendarData, historyData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null }))]);
+  const [userData, applicationData, calendarsData, legacyCalendarData, historyData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendars")).catch(() => ({ val: () => null })), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null }))]);
   const users = userData.val() || {}, applications = applicationData.val() || {}, currentProfile = users[auth.currentUser?.uid];
   if (["director", "admin"].includes(currentProfile?.role)) { const hu = Object.entries(users).find(([, profile]) => String(profile.employeeNo) === "3851"); if (hu && hu[1].jobTitle !== "麻醉專科護理師") await update(ref(database), { [`users/${hu[0]}/jobTitle`]: "麻醉專科護理師", [`users/${hu[0]}/bookingGroup`]: "clinical", [`users/${hu[0]}/updatedAt`]: new Date().toISOString() }).catch(error => console.warn("職稱同步將於下次主管操作時重試", error)); }
-  return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendar: calendarData.val() || null, leaveHistory: Object.entries(historyData.val() || {}).map(([id, data]) => ({ id, ...data })) };
+  const calendars = calendarsData.val() || {}; if (!calendars[115] && legacyCalendarData.val()) calendars[115] = legacyCalendarData.val();
+  return { accounts: Object.entries(users).map(([uid, data]) => profileShape(uid, data)), applications: Object.entries(applications).map(([id, data]) => ({ id, ...data })), hospitalCalendars: calendars, leaveHistory: Object.entries(historyData.val() || {}).map(([id, data]) => ({ id, ...data })) };
 }
 
 async function syncApplications(applications) {
@@ -72,7 +73,8 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
 
 async function updateEmploymentStatus(uid, employmentStatus) { const enabled = employmentStatus !== "離職"; await update(ref(database, `users/${uid}`), { employmentStatus, active: enabled, updatedAt: new Date().toISOString() }); }
 async function updateEmployee(uid, { name, jobTitle, employedAt, employmentStatus }) { const status = employmentStatus || "在職"; await update(ref(database, `users/${uid}`), { name, jobTitle, role: roleForTitle(jobTitle), bookingGroup: groupForTitle(jobTitle), employedAt, employmentStatus: status, active: status !== "離職", updatedAt: new Date().toISOString() }); }
+async function saveHospitalCalendar(year, calendar) { const data = { ...calendar, year: Number(year), updatedAt: new Date().toISOString() }; await update(ref(database), { [`settings/hospitalCalendars/${year}`]: data, [`settings/hospitalCalendar/${year}`]: data }); }
 async function updateEmploymentDates(entries) { const users = (await get(ref(database, "users"))).val() || {}, changes = {}, existing = Object.entries(users); entries.forEach(entry => { const match = existing.find(([, person]) => String(person.employeeNo).toUpperCase() === String(entry.employeeNo).toUpperCase()); if (match && entry.employedAt) changes[`users/${match[0]}/employedAt`] = entry.employedAt; }); await update(ref(database), changes); return { updated: Object.keys(changes).length, total: entries.length }; }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, updateEmploymentDates };
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, updateEmploymentDates, saveHospitalCalendar };
 window.dispatchEvent(new Event("firebase-ready"));

@@ -42,6 +42,8 @@
             <div class="section-heading"><div><p class="eyebrow">NEW REQUEST</p><h2>長假資料</h2></div><span class="required-note">* 必填</span></div>
             <label>申請方案 *<select id="plan" required><option value="one">方案一｜5–9 天（每年度 2 次）</option><option value="two">方案二｜10–17 天（每年度 1 次）</option></select></label>
             <div class="form-grid"><label>開始日期 *<input id="start-date" type="date" required /></label><label>結束日期 *<input id="end-date" type="date" required /></label></div>
+            <div class="checkbox-row"><input id="marriage-leave-check" type="checkbox" /><label for="marriage-leave-check">本次請假包含婚假（婚假不列入長假天數，但仍占用每梯名額）</label></div>
+            <div id="marriage-leave-fields" class="form-grid hidden"><label>婚假開始日期<input id="marriage-start" type="date" /></label><label>婚假結束日期<input id="marriage-end" type="date" /></label></div>
             <div class="calculation" id="calculation"><span>請選擇日期以計算長假天數</span></div>
             <label>備註 <textarea id="note" rows="3" placeholder="選填，例如旅遊安排或需注意事項"></textarea></label>
             <div class="checkbox-row"><input id="cv1-check" type="checkbox" /><label for="cv1-check">我已確認本次長假不與 CV1 course 衝突</label><a class="cv-course-link" href="#" id="cv-course-link">查看 CV course 班表</a></div>
