@@ -1,40 +1,40 @@
 /* 同月內，同一申請人維持同一色階；不同申請人以色階區分。 */
-.calendar-event.approved.person-tone-0 { background: #dff0e2; color: #297147; }
-.calendar-event.approved.person-tone-1 { background: #b8dfc4; color: #1b5937; }
-.calendar-event.approved.person-tone-2 { background: #e8f5ea; color: #347c52; }
-.calendar-event.approved.person-tone-3 { background: #9fcdb0; color: #154d2f; }
-.calendar-event.approved.person-tone-4 { background: #d4edd9; color: #286b46; }
+.calendar-event.approved.person-tone-0 { background: #dff3e4; color: #17653c; }
+.calendar-event.approved.person-tone-1 { background: #92d4a9; color: #0b482a; }
+.calendar-event.approved.person-tone-2 { background: #c6ece8; color: #075b58; }
+.calendar-event.approved.person-tone-3 { background: #6fbd8a; color: #053c24; }
+.calendar-event.approved.person-tone-4 { background: #b5d9ee; color: #124f75; }
 
 .calendar-event.pending.person-tone-0 { background: #fff1d7; color: #8b6725; }
-.calendar-event.pending.person-tone-1 { background: #f9e3b8; color: #795619; }
-.calendar-event.pending.person-tone-2 { background: #fff6e4; color: #9a7229; }
-.calendar-event.pending.person-tone-3 { background: #f2dca7; color: #705015; }
-.calendar-event.pending.person-tone-4 { background: #fbe9c6; color: #835f20; }
+.calendar-event.pending.person-tone-1 { background: #f8cf83; color: #684109; }
+.calendar-event.pending.person-tone-2 { background: #f7dfa9; color: #805414; }
+.calendar-event.pending.person-tone-3 { background: #eeb45a; color: #5e3700; }
+.calendar-event.pending.person-tone-4 { background: #f3c89d; color: #73380d; }
 
-.calendar-event.lottery.person-tone-0 { background: #e6e8f6; color: #595495; }
-.calendar-event.lottery.person-tone-1 { background: #d8dcf1; color: #4a4682; }
-.calendar-event.lottery.person-tone-2 { background: #f0f1fa; color: #6863a3; }
-.calendar-event.lottery.person-tone-3 { background: #ccd1eb; color: #403c75; }
-.calendar-event.lottery.person-tone-4 { background: #e0e3f3; color: #514c8b; }
+.calendar-event.lottery.person-tone-0 { background: #e5e4f7; color: #4a4688; }
+.calendar-event.lottery.person-tone-1 { background: #c4c1eb; color: #332d73; }
+.calendar-event.lottery.person-tone-2 { background: #d9e2fa; color: #2f4b88; }
+.calendar-event.lottery.person-tone-3 { background: #b2a8df; color: #2e245f; }
+.calendar-event.lottery.person-tone-4 { background: #d7c3ec; color: #5a347b; }
 
 /* 年曆日期格沿用月曆中第一筆申請的狀態與申請人色階。 */
-.mini-calendar .has-event.approved.person-tone-0 { background: #dff0e2; color: #297147; }
-.mini-calendar .has-event.approved.person-tone-1 { background: #b8dfc4; color: #1b5937; }
-.mini-calendar .has-event.approved.person-tone-2 { background: #e8f5ea; color: #347c52; }
-.mini-calendar .has-event.approved.person-tone-3 { background: #9fcdb0; color: #154d2f; }
-.mini-calendar .has-event.approved.person-tone-4 { background: #d4edd9; color: #286b46; }
+.mini-calendar .has-event.approved.person-tone-0 { background: #dff3e4; color: #17653c; }
+.mini-calendar .has-event.approved.person-tone-1 { background: #92d4a9; color: #0b482a; }
+.mini-calendar .has-event.approved.person-tone-2 { background: #c6ece8; color: #075b58; }
+.mini-calendar .has-event.approved.person-tone-3 { background: #6fbd8a; color: #053c24; }
+.mini-calendar .has-event.approved.person-tone-4 { background: #b5d9ee; color: #124f75; }
 
 .mini-calendar .has-event.pending.person-tone-0 { background: #fff1d7; color: #8b6725; }
-.mini-calendar .has-event.pending.person-tone-1 { background: #f9e3b8; color: #795619; }
-.mini-calendar .has-event.pending.person-tone-2 { background: #fff6e4; color: #9a7229; }
-.mini-calendar .has-event.pending.person-tone-3 { background: #f2dca7; color: #705015; }
-.mini-calendar .has-event.pending.person-tone-4 { background: #fbe9c6; color: #835f20; }
+.mini-calendar .has-event.pending.person-tone-1 { background: #f8cf83; color: #684109; }
+.mini-calendar .has-event.pending.person-tone-2 { background: #f7dfa9; color: #805414; }
+.mini-calendar .has-event.pending.person-tone-3 { background: #eeb45a; color: #5e3700; }
+.mini-calendar .has-event.pending.person-tone-4 { background: #f3c89d; color: #73380d; }
 
-.mini-calendar .has-event.lottery.person-tone-0 { background: #e6e8f6; color: #595495; }
-.mini-calendar .has-event.lottery.person-tone-1 { background: #d8dcf1; color: #4a4682; }
-.mini-calendar .has-event.lottery.person-tone-2 { background: #f0f1fa; color: #6863a3; }
-.mini-calendar .has-event.lottery.person-tone-3 { background: #ccd1eb; color: #403c75; }
-.mini-calendar .has-event.lottery.person-tone-4 { background: #e0e3f3; color: #514c8b; }
+.mini-calendar .has-event.lottery.person-tone-0 { background: #e5e4f7; color: #4a4688; }
+.mini-calendar .has-event.lottery.person-tone-1 { background: #c4c1eb; color: #332d73; }
+.mini-calendar .has-event.lottery.person-tone-2 { background: #d9e2fa; color: #2f4b88; }
+.mini-calendar .has-event.lottery.person-tone-3 { background: #b2a8df; color: #2e245f; }
+.mini-calendar .has-event.lottery.person-tone-4 { background: #d7c3ec; color: #5a347b; }
 
 /* 月曆的預約列軌固定，讓跨日申請不會在中途往上跳列。 */
 .calendar-event-lanes{display:grid;gap:3px}.calendar-event-lanes .calendar-event{margin:0}.calendar-event-placeholder{display:block;min-height:18px}
