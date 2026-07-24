@@ -20,7 +20,7 @@ setTimeout(()=>{addCollapsibleData($('#account-list'),'展開人員帳號資料'
 setTimeout(()=>{const form=$('#account-form'),button=form?.querySelector('button');if(form&&!$('#account-employed-at')){const label=document.createElement('label'),input=document.createElement('input');label.className='account-employed-label';label.textContent='到職日';input.id='account-employed-at';input.type='date';input.required=true;input.setAttribute('aria-label','到職日');label.append(input);form.insertBefore(label,button);}},0);
 const dateInput = $('#start-date'); const endInput = $('#end-date'); const planInput = $('#plan');
 const bookingLimit = iso(bookingLimitDate()); [dateInput,endInput,$('#manager-start'),$('#manager-end')].filter(Boolean).forEach(input=>input.max=bookingLimit);
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(apps)); if(window.firebaseBackend?.enabled) window.firebaseBackend.syncApplications(apps).then(()=>window.firebaseBackend.syncLeaveHistory(apps)).catch(error=>console.error('Firebase 同步失敗：',error)); }
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(apps)); if(!window.firebaseBackend?.enabled)return Promise.resolve(); return window.firebaseBackend.syncApplications(apps).then(()=>window.firebaseBackend.syncLeaveHistory(apps)).catch(error=>{console.error('Firebase 同步失敗：',error);toast('資料庫同步失敗，請確認網路後重新送出。');}); }
 function parseDate(s) { return new Date(`${s}T00:00:00`); }
 function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
 function iso(d) { return d.toISOString().slice(0,10); }

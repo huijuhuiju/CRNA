@@ -31,14 +31,21 @@ async function loadData() {
 
 async function syncApplications(applications) {
   if (!auth.currentUser) return;
+  const currentProfile = (await get(ref(database, `users/${auth.currentUser.uid}`))).val() || {};
+  const manager = ["director", "admin"].includes(currentProfile.role);
+  const writable = manager ? applications : applications.filter((application) => (application.applicantId || application.userId) === auth.currentUser.uid && ["pending", "cancelled"].includes(application.status));
   const changes = {};
-  applications.forEach((application) => { const { id, ...data } = application; changes[`applications/${id}`] = { ...data, updatedAt: new Date().toISOString() }; });
+  writable.forEach((application) => { const { id, ...data } = application; changes[`applications/${id}`] = { ...data, updatedAt: new Date().toISOString() }; });
+  if (!Object.keys(changes).length) return;
   await update(ref(database), changes);
 }
 
 async function syncLeaveHistory(applications) {
   const approved = applications.filter((application) => application.status === "approved");
   if (!approved.length) return;
+  if (!auth.currentUser) return;
+  const currentProfile = (await get(ref(database, `users/${auth.currentUser.uid}`))).val() || {};
+  if (!["director", "admin"].includes(currentProfile.role)) return;
   const users = (await get(ref(database, "users"))).val() || {}, changes = {};
   approved.forEach((application) => {
     const person = users[application.userId] || {};
