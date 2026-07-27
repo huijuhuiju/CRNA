@@ -115,7 +115,9 @@ setTimeout(() => {
       document.dispatchEvent(new Event('hospital-calendars-updated'));
       toast('Google Drive 行事曆連結已同步至資料庫。');
     } catch (error) {
-      toast(error.message || '行事曆連結儲存失敗。');
+      const detail = error?.message || error?.code || '未知錯誤';
+      status.textContent = `儲存失敗：${detail}`;
+      toast(`行事曆連結未儲存：${detail}`);
     } finally {
       saveDrive.disabled = false;
       saveDrive.textContent = '儲存 Google Drive 行事曆連結';
