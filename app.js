@@ -21,6 +21,109 @@ const sampleApplications = [
 let apps = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || sampleApplications;
 let leaveHistory = [];
 
+// Firebase Storage now requires a billed Blaze project.  Keep the actual PDF in
+// Google Drive and store only its controlled sharing URL in Realtime Database.
+// This preserves the existing free Firebase + GitHub Pages setup.
+setTimeout(() => {
+  const card = $('#hospital-calendar-card');
+  const year = $('#hospital-calendar-year');
+  const pdfInput = $('#hospital-calendar-pdf');
+  const status = $('#hospital-calendar-file-status');
+  const oldUpload = $('#upload-hospital-calendar');
+  const oldView = $('#view-hospital-calendar');
+  const saveHolidays = $('#save-hospital-calendar');
+  if (!card || !year || !status || $('#hospital-calendar-drive-url')) return;
+
+  if (pdfInput) { pdfInput.value = ''; pdfInput.disabled = true; pdfInput.classList.add('hidden'); }
+  if (oldUpload) oldUpload.classList.add('hidden');
+  if (oldView) oldView.classList.add('hidden');
+  if (saveHolidays) saveHolidays.textContent = '儲存公告連假設定';
+
+  const driveUrl = document.createElement('input');
+  const driveLabel = document.createElement('input');
+  const saveDrive = document.createElement('button');
+  const viewDrive = document.createElement('a');
+  const help = document.createElement('p');
+  driveUrl.id = 'hospital-calendar-drive-url';
+  driveUrl.type = 'url';
+  driveUrl.placeholder = '貼上 Google Drive PDF 共用連結';
+  driveUrl.setAttribute('aria-label', 'Google Drive 行事曆連結');
+  driveLabel.id = 'hospital-calendar-drive-label';
+  driveLabel.placeholder = '檔案名稱或說明（選填）';
+  driveLabel.setAttribute('aria-label', '行事曆檔案名稱');
+  saveDrive.id = 'save-hospital-calendar-drive';
+  saveDrive.type = 'button';
+  saveDrive.className = 'primary-button';
+  saveDrive.textContent = '儲存 Google Drive 行事曆連結';
+  viewDrive.id = 'view-hospital-calendar-drive';
+  viewDrive.className = 'outline-button hospital-calendar-view hidden';
+  viewDrive.target = '_blank';
+  viewDrive.rel = 'noopener';
+  viewDrive.textContent = '查看院方行事曆 PDF';
+  help.className = 'muted';
+  help.textContent = '請先將 PDF 上傳至 Google Drive、設定共用權限後，貼上共用連結；系統只保存連結與公告連假資料。';
+  const form = card.querySelector('.compact-form');
+  form?.insertBefore(driveUrl, saveHolidays || null);
+  form?.insertBefore(driveLabel, saveHolidays || null);
+  form?.insertBefore(saveDrive, saveHolidays || null);
+  status.after(help, viewDrive);
+
+  const getCalendar = () => hospitalCalendars?.[year.value] || hospitalCalendars?.[String(year.value)] || {};
+  const acceptedDriveUrl = value => {
+    try {
+      const url = new URL(value);
+      return /^https:$/.test(url.protocol) && (url.hostname === 'drive.google.com' || url.hostname.endsWith('.drive.google.com') || url.hostname === 'docs.google.com' || url.hostname.endsWith('.docs.google.com'));
+    } catch { return false; }
+  };
+  const refreshDrive = () => {
+    const calendar = getCalendar();
+    const link = calendar.driveUrl || calendar.pdfUrl || '';
+    driveUrl.value = calendar.driveUrl || '';
+    driveLabel.value = calendar.driveLabel || calendar.source || '';
+    if (link) {
+      viewDrive.href = link;
+      viewDrive.classList.remove('hidden');
+      const when = calendar.driveUpdatedAt || calendar.pdfUploadedAt || calendar.updatedAt;
+      status.textContent = `已設定 Google Drive 行事曆：${calendar.driveLabel || calendar.source || '院方公告行事曆'}${when ? `；更新日期：${new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium', timeStyle: 'short', hour12: false }).format(new Date(when))}` : ''}`;
+    } else viewDrive.classList.add('hidden');
+  };
+  year.addEventListener('change', refreshDrive);
+  saveDrive.addEventListener('click', async () => {
+    if (!isManager()) { toast('只有主管可設定院方行事曆連結。'); return; }
+    const link = driveUrl.value.trim();
+    if (!acceptedDriveUrl(link)) { toast('請貼上有效的 Google Drive 或 Google 文件共用連結。'); return; }
+    const previous = getCalendar();
+    const updatedAt = new Date().toISOString();
+    const calendar = {
+      ...previous,
+      year: Number(year.value),
+      source: driveLabel.value.trim() || previous.source || `${year.value} 年度院方公告行事曆`,
+      driveLabel: driveLabel.value.trim() || previous.driveLabel || `${year.value} 年度院方公告行事曆`,
+      driveUrl: link,
+      driveUpdatedAt: updatedAt,
+      events: previous.events || [],
+      excludedDates: previous.excludedDates || [],
+      maxPeoplePerCohort: 2
+    };
+    try {
+      saveDrive.disabled = true;
+      saveDrive.textContent = '同步中…';
+      await window.firebaseBackend.saveHospitalCalendar(year.value, calendar);
+      hospitalCalendars[year.value] = calendar;
+      if (String(year.value) === '115') hospitalCalendar115 = calendar;
+      refreshDrive();
+      document.dispatchEvent(new Event('hospital-calendars-updated'));
+      toast('Google Drive 行事曆連結已同步至資料庫。');
+    } catch (error) {
+      toast(error.message || '行事曆連結儲存失敗。');
+    } finally {
+      saveDrive.disabled = false;
+      saveDrive.textContent = '儲存 Google Drive 行事曆連結';
+    }
+  });
+  refreshDrive();
+}, 0);
+
 const $ = (s) => document.querySelector(s);
 function addCollapsibleData(container, title){if(!container||container.parentElement?.classList.contains('data-disclosure'))return;const details=document.createElement('details'),summary=document.createElement('summary');details.className='data-disclosure';summary.textContent=title;details.append(summary);container.parentNode.insertBefore(details,container);details.append(container);}
 setTimeout(()=>{addCollapsibleData($('#account-list'),'展開人員帳號資料');const cvStatus=$('#course-file-status'),cvInput=$('#course-file'),cvLabel=cvInput?.previousElementSibling;if(cvStatus&&cvInput&&cvLabel&&!cvStatus.parentElement?.classList.contains('data-disclosure')){const details=document.createElement('details'),summary=document.createElement('summary');details.className='data-disclosure';summary.textContent='CV course 班表上傳';cvStatus.parentNode.insertBefore(details,cvLabel);details.append(summary,cvLabel,cvInput,cvStatus);}},0);
