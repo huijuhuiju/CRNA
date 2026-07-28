@@ -44,7 +44,29 @@ function equalizeCourseColumns() {
     table.style.width = '100%';
   });
 }
-new MutationObserver(equalizeCourseColumns).observe(document.body, { childList: true, subtree: true });
+function moveCourseNotesBelowTable() {
+  document.querySelectorAll('#course-sheet-table table').forEach(table => {
+    const noteItems = [...table.querySelectorAll('tr')]
+      .filter(row => {
+        const cells = [...row.children];
+        const first = cells[0]?.textContent.trim() || '';
+        return cells.length > 1 && /^(?:※|[（(][一二三四五六七八九十])/u.test(first) && cells.slice(1).every(cell => !cell.textContent.trim());
+      })
+      .map(row => {
+        const text = row.children[0].textContent.trim();
+        row.remove();
+        return text;
+      });
+    if (!noteItems.length) return;
+    const holder = table.closest('#course-sheet-table');
+    holder.querySelector('.course-sheet-notes')?.remove();
+    const notes = document.createElement('section');
+    notes.className = 'course-sheet-notes';
+    notes.innerHTML = `<h3>班表注意事項</h3><ul>${noteItems.map(item => `<li>${courseEscape(item)}</li>`).join('')}</ul>`;
+    holder.after(notes);
+  });
+}
+new MutationObserver(() => { equalizeCourseColumns(); moveCourseNotesBelowTable(); }).observe(document.body, { childList: true, subtree: true });
 
 const STORAGE_KEY = 'anesthesia-long-leave-v1';
 const currentUser = { id: 'u1', name: '王小美', employedAt: '2025-03-01', probationPassed: true };
