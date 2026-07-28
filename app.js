@@ -38,6 +38,15 @@ document.addEventListener('keydown', event => {
 // the actual maximum column count so every CV course field stays aligned.
 function equalizeCourseColumns() {
   document.querySelectorAll('#course-sheet-table table').forEach(table => {
+    const tableViewport = table.closest('#course-sheet-table');
+    if (tableViewport) {
+      // Inline values intentionally win over legacy stylesheet rules that can
+      // otherwise shrink the desktop sheet to a single visible row.
+      tableViewport.style.setProperty('height', '330px', 'important');
+      tableViewport.style.setProperty('min-height', '300px', 'important');
+      tableViewport.style.setProperty('max-height', '430px', 'important');
+      tableViewport.style.setProperty('flex', '0 0 330px', 'important');
+    }
     const rows = [...table.querySelectorAll('tr')];
     const columnCount = Math.max(0, ...rows.map(row => row.children.length));
     if (!columnCount) return;
