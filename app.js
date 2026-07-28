@@ -18,6 +18,18 @@ document.addEventListener('click', event => {
   event.stopPropagation();
   $('#course-view-modal')?.classList.add('hidden');
 });
+// Use capture phase as well: on mobile, the scrollable timetable can consume
+// the normal bubbling tap before it reaches the previous listener.
+document.addEventListener('click', event => {
+  if (!event.target.closest('#close-course-view')) return;
+  event.preventDefault();
+  $('#course-view-modal')?.classList.add('hidden');
+}, true);
+document.addEventListener('touchend', event => {
+  if (!event.target.closest('#close-course-view')) return;
+  event.preventDefault();
+  $('#course-view-modal')?.classList.add('hidden');
+}, { capture: true, passive: false });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') $('#course-view-modal')?.classList.add('hidden');
 });

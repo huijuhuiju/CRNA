@@ -18,7 +18,9 @@
 #course-view-modal .course-sheet-table td{min-width:0;max-width:0;padding:8px 9px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.45}
 #course-view-modal .course-sheet-table tr:first-child td{position:sticky;top:0;z-index:1}
 #course-view-modal .confirm-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;background:#fff}
+#course-view-modal .confirm-actions{position:sticky;bottom:0;z-index:8}
 #course-view-modal #close-course-view{min-width:110px;min-height:44px;cursor:pointer}
+#course-view-modal #close-course-view{position:relative;z-index:9;pointer-events:auto;touch-action:manipulation}
 .course-sheet-notes{margin:12px 0 0;padding:14px 18px;background:#f3f7f2;border:1px solid #d9e6da;border-radius:10px;color:#284a3b}
 .course-sheet-notes h3{margin:0 0 8px;font-size:16px}.course-sheet-notes ul{margin:0;padding-left:1.25em;display:grid;gap:6px}.course-sheet-notes li{line-height:1.5}
 @media(max-width:700px){
