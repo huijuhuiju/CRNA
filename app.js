@@ -22,6 +22,30 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') $('#course-view-modal')?.classList.add('hidden');
 });
 
+// Imported worksheets do not contain column widths.  Apply equal widths from
+// the actual maximum column count so every CV course field stays aligned.
+function equalizeCourseColumns() {
+  document.querySelectorAll('#course-sheet-table table').forEach(table => {
+    const rows = [...table.querySelectorAll('tr')];
+    const columnCount = Math.max(0, ...rows.map(row => row.children.length));
+    if (!columnCount) return;
+    const existing = table.querySelector('colgroup[data-equal-columns]');
+    if (existing?.children.length === columnCount) return;
+    existing?.remove();
+    const colgroup = document.createElement('colgroup');
+    colgroup.dataset.equalColumns = 'true';
+    for (let index = 0; index < columnCount; index += 1) {
+      const col = document.createElement('col');
+      col.style.width = `${100 / columnCount}%`;
+      colgroup.append(col);
+    }
+    table.prepend(colgroup);
+    table.style.tableLayout = 'fixed';
+    table.style.width = '100%';
+  });
+}
+new MutationObserver(equalizeCourseColumns).observe(document.body, { childList: true, subtree: true });
+
 const STORAGE_KEY = 'anesthesia-long-leave-v1';
 const currentUser = { id: 'u1', name: '王小美', employedAt: '2025-03-01', probationPassed: true };
 const sampleApplications = [

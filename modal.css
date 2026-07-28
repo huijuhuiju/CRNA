@@ -14,6 +14,7 @@
 #course-view-modal .course-view-card{width:min(1480px,calc(100vw - 24px));height:min(900px,calc(100dvh - 24px));max-height:calc(100dvh - 24px);padding:24px;box-sizing:border-box}
 #course-view-modal .course-sheet-table{border-radius:10px;background:#fff;min-height:0}
 #course-view-modal .course-sheet-table table{width:100%;min-width:0;table-layout:fixed;font-size:14px}
+#course-view-modal .course-sheet-table col{width:auto}
 #course-view-modal .course-sheet-table td{min-width:0;max-width:0;padding:8px 9px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.45}
 #course-view-modal .course-sheet-table tr:first-child td{position:sticky;top:0;z-index:1}
 #course-view-modal .confirm-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;background:#fff}
