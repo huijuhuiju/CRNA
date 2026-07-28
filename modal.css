@@ -34,3 +34,13 @@
   #course-view-modal #close-course-view{width:100%}
   .course-sheet-notes{margin-top:10px;padding:12px 14px;font-size:13px}
 }
+
+/* Keep the actual timetable useful: show at least five data rows before the
+   optional notes section, which can be read further down the dialog. */
+#course-view-modal .course-view-card{overflow-x:hidden;overflow-y:auto}
+#course-view-modal .course-sheet-table{flex:0 0 auto;height:min(52dvh,430px);min-height:300px;max-height:none}
+@media(max-width:700px){
+  #course-view-modal .course-view-card{overflow-y:auto}
+  #course-view-modal .course-sheet-table{flex:0 0 auto;height:330px;min-height:300px;max-height:none}
+  #course-view-modal .course-sheet-notes{flex:none}
+}
