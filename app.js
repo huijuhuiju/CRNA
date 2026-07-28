@@ -12,27 +12,38 @@ setTimeout(()=>{const card=$('#hospital-calendar-card'),year=$('#hospital-calend
 setTimeout(()=>{const form=$('#account-form'),button=form?.querySelector('.primary-button');if(!form||!button)return;if(!$('#account-employment-status')){const label=document.createElement('label'),select=document.createElement('select'),cancel=document.createElement('button');label.className='account-status-label';label.textContent='人員狀態';select.id='account-employment-status';select.innerHTML='<option value="在職">在職</option><option value="育嬰留停">育嬰留停</option><option value="留職停薪">留職停薪</option><option value="離職">離職</option>';label.append(select);form.insertBefore(label,button);cancel.id='cancel-account-edit';cancel.className='outline-button hidden';cancel.type='button';cancel.textContent='取消修改';form.append(cancel);}const reset=()=>{editingAccountUid=null;form.reset();const password=$('#account-password'),id=$('#account-id');if(password){password.required=true;password.placeholder='初始密碼';}if(id)id.disabled=false;button.textContent='建立帳號';$('#cancel-account-edit')?.classList.add('hidden');};const start=uid=>{if(!isManager())return;const account=accounts.find(item=>item.uid===uid);if(!account)return;editingAccountUid=uid;$('#account-name').value=account.name||'';$('#account-id').value=account.id||'';$('#account-id').disabled=true;$('#account-role').value=account.jobTitle||'麻醉專科護理師';$('#account-employed-at').value=account.employedAt||'';$('#account-employment-status').value=account.employmentStatus||'在職';const password=$('#account-password');password.value='';password.required=false;password.placeholder='不變更密碼';button.textContent='儲存修改';$('#cancel-account-edit').classList.remove('hidden');$('#account-name').focus();};document.addEventListener('click',e=>{const edit=e.target.closest('[data-edit-employee]');if(edit)start(edit.dataset.editEmployee);if(e.target.id==='cancel-account-edit')reset();});form.addEventListener('submit',async e=>{if(!editingAccountUid)return;e.preventDefault();e.stopImmediatePropagation();if(!isManager()){toast('只有主管可修改人員資料。');return;}const name=$('#account-name').value.trim(),jobTitle=$('#account-role').value,employedAt=$('#account-employed-at').value,employmentStatus=$('#account-employment-status').value;if(!name||!employedAt){toast('請完整填寫姓名與到職日。');return;}try{await window.firebaseBackend.updateEmployee(editingAccountUid,{name,jobTitle,employedAt,employmentStatus});await loadFirebaseData();reset();toast('人員資料已同步更新。');}catch(error){toast(error.message||'人員資料更新失敗。');}},true);},0);
 // Always provide a reliable close action for the CV course viewer, including
 // on mobile browsers where a nested scroll area can otherwise intercept taps.
+// Removing the dialog (rather than only adding a CSS class) also prevents a
+// stale full-screen layer from remaining above the page on mobile Safari.
+function closeCourseView() {
+  const modal = $('#course-view-modal');
+  if (modal) modal.remove();
+}
 document.addEventListener('click', event => {
   if (!event.target.closest('#close-course-view')) return;
   event.preventDefault();
   event.stopPropagation();
-  $('#course-view-modal')?.classList.add('hidden');
+  closeCourseView();
 });
 // Use capture phase as well: on mobile, the scrollable timetable can consume
 // the normal bubbling tap before it reaches the previous listener.
 document.addEventListener('click', event => {
   if (!event.target.closest('#close-course-view')) return;
   event.preventDefault();
-  $('#course-view-modal')?.classList.add('hidden');
+  closeCourseView();
 }, true);
 document.addEventListener('touchend', event => {
   if (!event.target.closest('#close-course-view')) return;
   event.preventDefault();
-  $('#course-view-modal')?.classList.add('hidden');
+  closeCourseView();
 }, { capture: true, passive: false });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') $('#course-view-modal')?.classList.add('hidden');
+  if (event.key === 'Escape') closeCourseView();
 });
+document.addEventListener('pointerdown', event => {
+  if (!event.target.closest('#close-course-view')) return;
+  event.preventDefault();
+  closeCourseView();
+}, true);
 
 // Imported worksheets do not contain column widths.  Apply equal widths from
 // the actual maximum column count so every CV course field stays aligned.
