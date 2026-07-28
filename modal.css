@@ -8,3 +8,25 @@
 
 /* CV course 表格固定於視窗內，避免大型 Excel 橫向欄位撐開頁面 */
 #course-view-modal{z-index:60;padding:24px}#course-view-modal .course-view-card{width:min(1100px,calc(100vw - 48px));max-height:calc(100vh - 48px);min-width:0;display:flex;flex-direction:column;overflow:hidden}#course-view-modal #course-view-meta{flex:none}#course-view-modal label{flex:none}#course-view-modal .course-sheet-table{width:100%;min-width:0;flex:1 1 auto;max-height:none;overflow:auto;overscroll-behavior:contain}#course-view-modal .course-sheet-table table{width:max-content;min-width:100%}#course-view-modal .confirm-actions{flex:none;margin-top:14px}@media(max-width:600px){#course-view-modal{padding:10px}#course-view-modal .course-view-card{width:100%;max-height:none;min-height:calc(100vh - 20px)}#course-view-modal .course-sheet-table{max-height:calc(100vh - 275px)}#course-view-modal .confirm-actions{margin-top:0}}
+
+/* CV course viewer: keep the whole sheet inside a single responsive dialog. */
+#course-view-modal{padding:12px;align-items:center;justify-items:center}
+#course-view-modal .course-view-card{width:min(1480px,calc(100vw - 24px));height:min(900px,calc(100dvh - 24px));max-height:calc(100dvh - 24px);padding:24px;box-sizing:border-box}
+#course-view-modal .course-sheet-table{border-radius:10px;background:#fff;min-height:0}
+#course-view-modal .course-sheet-table table{width:100%;min-width:0;table-layout:fixed;font-size:14px}
+#course-view-modal .course-sheet-table td{min-width:0;max-width:0;padding:8px 9px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.45}
+#course-view-modal .course-sheet-table tr:first-child td{position:sticky;top:0;z-index:1}
+#course-view-modal .confirm-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;background:#fff}
+#course-view-modal #close-course-view{min-width:110px;min-height:44px;cursor:pointer}
+@media(max-width:700px){
+  #course-view-modal{display:grid;padding:0;place-items:stretch;overflow:hidden}
+  #course-view-modal .course-view-card{width:100%;height:100dvh;max-height:100dvh;min-height:0;border-radius:0;padding:18px 14px}
+  #course-view-modal .course-view-card h2{font-size:24px;margin-bottom:8px}
+  #course-view-modal #course-view-meta{font-size:13px;line-height:1.5;margin:0 0 8px}
+  #course-view-modal .course-view-card label{font-size:14px;margin:6px 0 8px}
+  #course-view-modal .course-sheet-table{width:100%;max-height:none;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
+  #course-view-modal .course-sheet-table table{font-size:11px;min-width:100%;table-layout:fixed}
+  #course-view-modal .course-sheet-table td{padding:6px 4px;line-height:1.35}
+  #course-view-modal .confirm-actions{position:static;margin:0;padding:12px 0 0}
+  #course-view-modal #close-course-view{width:100%}
+}
