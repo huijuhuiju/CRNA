@@ -87,7 +87,14 @@ async function deleteLongLeaveApplication(id) {
   if (!auth.currentUser) throw new Error("請先登入主管帳號。");
   const profile = (await get(ref(database, `users/${auth.currentUser.uid}`))).val() || {};
   if (!["director", "admin"].includes(profile.role)) throw new Error("只有主管可刪除申請。");
-  await update(ref(database), { [`applications/${id}`]: null, [`leaveHistory/${id}`]: null });
+  const now = new Date().toISOString();
+  await update(ref(database), {
+    [`applications/${id}/status`]: "deleted",
+    [`applications/${id}/deletedAt`]: now,
+    [`applications/${id}/deletedBy`]: profile.name || auth.currentUser.uid,
+    [`leaveHistory/${id}/deleted`]: true,
+    [`leaveHistory/${id}/deletedAt`]: now
+  });
 }
 async function uploadHospitalCalendarPdf(year, file) { if (!auth.currentUser) throw new Error("請先以主管帳號登入。"); if (!file || file.type !== "application/pdf") throw new Error("請選擇 PDF 格式的院方行事曆。"); const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_"); const path = `hospitalCalendars/${year}/${Date.now()}_${safeName}`; const target = storageRef(storage, path); await uploadBytes(target, file, { contentType: "application/pdf" }); return { fileName: file.name, pdfUrl: await getDownloadURL(target), storagePath: path, uploadedAt: new Date().toISOString() }; }
 async function updateEmploymentDates(entries) { const users = (await get(ref(database, "users"))).val() || {}, changes = {}, existing = Object.entries(users); entries.forEach(entry => { const match = existing.find(([, person]) => String(person.employeeNo).toUpperCase() === String(entry.employeeNo).toUpperCase()); if (match && entry.employedAt) changes[`users/${match[0]}/employedAt`] = entry.employedAt; }); await update(ref(database), changes); return { updated: Object.keys(changes).length, total: entries.length }; }
