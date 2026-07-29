@@ -100,6 +100,29 @@ function moveCourseNotesBelowTable() {
 }
 new MutationObserver(() => { equalizeCourseColumns(); moveCourseNotesBelowTable(); }).observe(document.body, { childList: true, subtree: true });
 
+document.addEventListener('click', async event => {
+  const button = event.target.closest?.('[data-action="delete"][data-id]');
+  if (!button) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if (!isManager()) return;
+  const id = button.dataset.id;
+  const application = apps.find(item => item.id === id);
+  if (!application) return;
+  if (!confirm(`確定刪除 ${application.user} 的長假申請？此操作無法復原。`)) return;
+  button.disabled = true;
+  try {
+    if (window.firebaseBackend?.enabled) await window.firebaseBackend.deleteLongLeaveApplication(id);
+    apps = apps.filter(item => item.id !== id);
+    leaveHistory = leaveHistory.filter(item => item.id !== id);
+    renderAll();
+    toast('申請已刪除，資料庫與歷年紀錄已同步移除。');
+  } catch (error) {
+    button.disabled = false;
+    toast(error.message || '刪除申請失敗。');
+  }
+}, true);
+
 const STORAGE_KEY = 'anesthesia-long-leave-v1';
 const currentUser = { id: 'u1', name: '王小美', employedAt: '2025-03-01', probationPassed: true };
 const sampleApplications = [
@@ -276,7 +299,25 @@ function refreshForm() { const applicantId=sessionUserId(),result = checkRequest
 function renderMine() { const mine = apps.filter(a=>a.userId===sessionUserId()); const fy = fiscalYear(new Date().toISOString().slice(0,10)); const active = mine.filter(a=>fiscalYear(a.start)===fy && ['pending','approved','lottery'].includes(a.status)); const p1=active.filter(a=>a.plan==='one').length,p2=active.filter(a=>a.plan==='two').length; $('#my-summary').innerHTML=`<article class="summary-card"><span>方案一已申請</span><b>${p1} / 2</b></article><article class="summary-card"><span>方案二已申請</span><b>${p2} / 1</b></article><article class="summary-card"><span>目前院方年度</span><b>${fiscalLabel(fy)}</b></article><article class="summary-card"><span>提示</span><b style="font-size:14px;font-family:inherit">核准以正式班表為準</b></article>`; $('#my-applications').innerHTML=mine.length?mine.map(a=>`<tr><td>${formatDate(a.start)}<br>至 ${formatDate(a.end)}</td><td>${planName(a.plan)}</td><td>${a.days} 天</td><td>${statusTag(a.status)}</td><td>${a.status==='pending'?`<button class="mini-btn danger" data-cancel="${a.id}">取消申請</button>`:'—'}</td></tr>`).join(''):'<tr><td colspan="5">尚無申請資料</td></tr>';
 }
 function groupSize(app) { return apps.filter(a=>['pending','approved','lottery'].includes(a.status)&&overlaps(a,app)).length; }
-function renderDirector() { const active=apps.filter(a=>['pending','lottery'].includes(a.status)); const approved=apps.filter(a=>a.status==='approved'); const groups=apps.filter(a=>['pending','lottery'].includes(a.status)&&groupSize(a)>2); const uniqueLottery=new Set(groups.map(a=>a.start.slice(0,7))).size; $('#pending-count').textContent=active.length; $('#approved-count').textContent=approved.length; $('#lottery-count').textContent=uniqueLottery; $('#confirmed-count').textContent=approved.length; $('#director-applications').innerHTML=apps.map(a=>`<tr><td><strong>${a.user}</strong><br><small class="muted">${a.note||'—'}</small></td><td>${formatDate(a.start)}<br>– ${formatDate(a.end)}</td><td>${planName(a.plan)}<br>${a.days} 天</td><td>${groupSize(a)} 人 ${groupSize(a)>2?'<span class="tag lottery">需抽籤</span>':''}</td><td>${statusTag(a.status)}</td><td><div class="row-actions">${a.status==='pending'||a.status==='lottery'?`<button class="mini-btn" data-action="approve" data-id="${a.id}">核准</button><button class="mini-btn danger" data-action="reject" data-id="${a.id}">駁回</button>`:'—'}</div></td></tr>`).join(''); }
+function renderDirector() {
+  const active=apps.filter(a=>['pending','lottery'].includes(a.status));
+  const approved=apps.filter(a=>a.status==='approved');
+  const groups=apps.filter(a=>['pending','lottery'].includes(a.status)&&groupSize(a)>2);
+  const uniqueLottery=new Set(groups.map(a=>a.start.slice(0,7))).size;
+  $('#pending-count').textContent=active.length;
+  $('#approved-count').textContent=approved.length;
+  $('#lottery-count').textContent=uniqueLottery;
+  $('#confirmed-count').textContent=approved.length;
+  $('#director-applications').innerHTML=apps.map(a=>`<tr>
+    <td><strong>${a.user}</strong><br><small class="muted">${a.note||'—'}</small></td>
+    <td>${formatDate(a.start)}<br>– ${formatDate(a.end)}</td>
+    <td>${planName(a.plan)}<br>${a.days} 天</td>
+    <td>${groupSize(a)} 人 ${groupSize(a)>2?'<span class="tag lottery">需抽籤</span>':''}</td>
+    <td>${statusTag(a.status)}</td>
+    <td class="manager-only"><div class="row-actions">${a.status==='pending'||a.status==='lottery'?`<button class="mini-btn" data-action="approve" data-id="${a.id}">核准</button><button class="mini-btn danger" data-action="reject" data-id="${a.id}">駁回</button>`:'—'}</div></td>
+    <td class="manager-only"><button class="mini-btn danger" data-action="delete" data-id="${a.id}">刪除</button></td>
+  </tr>`).join('');
+}
 function renderHistory(){const table=$('#history-records');if(!table)return;const profileList=Array.isArray(accounts)?accounts:[],system=apps.filter(a=>a.status==='approved').map(a=>({id:a.id,userId:a.userId,name:a.user,employeeNo:profileList.find(p=>p.uid===a.userId)?.id||'',plan:a.plan,start:a.start,end:a.end,days:a.days,approvedAt:a.approvedAt||'',source:'system'})),records=[...leaveHistory.filter(record=>!system.some(item=>item.id===record.id)),...system],visible=isManager()?records:records.filter(record=>record.userId===sessionUserId());table.innerHTML=visible.length?visible.sort((a,b)=>String(b.start||'').localeCompare(String(a.start||''))).map(record=>`<tr><td>${record.name||'未設定'}</td><td>${record.employeeNo||'—'}</td><td>${record.start&&record.end?`${formatDate(record.start)}<br>至 ${formatDate(record.end)}`:'—'}</td><td>${record.plan?planName(record.plan):'—'}</td><td>${record.days||'—'}</td><td>${record.approvedAt?String(record.approvedAt).slice(0,10):'—'}</td></tr>`).join(''):'<tr><td colspan="6">尚無歷年長假紀錄</td></tr>';}
 let historySelectedYear=null;
 function historySourceRecords(){const profileList=Array.isArray(accounts)?accounts:[],system=apps.filter(app=>app.status==='approved').map(app=>({id:app.id,userId:app.userId,name:app.user,employeeNo:profileList.find(person=>person.uid===app.userId)?.id||'',plan:app.plan,start:app.start,end:app.end,days:app.days,approvedAt:app.approvedAt||'',source:'system'})),records=[...leaveHistory.filter(record=>!system.some(item=>item.id===record.id)),...system];return (isManager()?records:records.filter(record=>record.userId===sessionUserId())).filter(record=>record.start&&record.end);}
