@@ -318,6 +318,103 @@ function renderDirector() {
     <td class="manager-only"><button class="mini-btn danger" data-action="delete" data-id="${a.id}">刪除</button></td>
   </tr>`).join('');
 }
+
+function actualLeaveDays(start, end, application) {
+  return daysBetween(start, end, application.marriageLeaveRange || null);
+}
+
+function openActualLeaveEditor(application) {
+  let modal = $('#actual-leave-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'actual-leave-modal';
+    modal.className = 'confirm-modal hidden';
+    modal.innerHTML = `<div class="confirm-card actual-leave-card" role="dialog" aria-modal="true" aria-labelledby="actual-leave-title">
+      <p class="eyebrow">ACTUAL LEAVE RECORD</p>
+      <h2 id="actual-leave-title">編修實際長假</h2>
+      <p id="actual-leave-person" class="muted"></p>
+      <form id="actual-leave-form" class="actual-leave-form">
+        <label>實際開始日期<input id="actual-leave-start" type="date" required /></label>
+        <label>實際結束日期<input id="actual-leave-end" type="date" required /></label>
+        <div class="actual-leave-days"><span>實際長假天數</span><b id="actual-leave-days">0 天</b></div>
+        <p id="actual-leave-error" class="login-error hidden" role="alert"></p>
+        <p class="muted">原申請日期會保留在資料庫稽核紀錄；儲存後，主管管理、月曆與歷年長假使用狀況會改以實際日期與天數呈現。</p>
+        <div class="confirm-actions"><button id="actual-leave-cancel" class="outline-button" type="button">取消</button><button class="primary-button" type="submit">儲存實際休假</button></div>
+      </form>
+    </div>`;
+    document.body.append(modal);
+    const form = $('#actual-leave-form');
+    const refreshDays = () => {
+      const app = apps.find(item => item.id === modal.dataset.applicationId);
+      const start = $('#actual-leave-start').value, end = $('#actual-leave-end').value;
+      $('#actual-leave-days').textContent = start && end && end >= start ? `${actualLeaveDays(start, end, app || {})} 天` : '0 天';
+    };
+    $('#actual-leave-start').addEventListener('input', refreshDays);
+    $('#actual-leave-end').addEventListener('input', refreshDays);
+    $('#actual-leave-cancel').addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', event => { if (event.target === modal) modal.classList.add('hidden'); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const id = modal.dataset.applicationId, application = apps.find(item => item.id === id);
+      const start = $('#actual-leave-start').value, end = $('#actual-leave-end').value;
+      const errorBox = $('#actual-leave-error'), today = iso(new Date());
+      errorBox.classList.add('hidden');
+      if (!application || !start || !end || end < start) {
+        errorBox.textContent = '請確認實際起訖日期。';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      if (end >= today) {
+        errorBox.textContent = '實際休假結束日期須早於今天，才能完成休後編修。';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      const days = actualLeaveDays(start, end, application);
+      if (!confirm(`確認將 ${application.user} 的實際休假更新為 ${formatDate(start)} 至 ${formatDate(end)}，共 ${days} 天？`)) return;
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        apps = apps.map(item => item.id === id ? {
+          ...item,
+          requestedStart: item.requestedStart || item.start,
+          requestedEnd: item.requestedEnd || item.end,
+          requestedDays: item.requestedDays || item.days,
+          start,
+          end,
+          days,
+          actualEditedAt: new Date().toISOString(),
+          actualEditedBy: activeAccount?.name || '主管'
+        } : item);
+        await save();
+        modal.classList.add('hidden');
+        renderAll();
+        toast('實際休假已更新，並已同步至資料庫與歷年長假紀錄。');
+      } catch (error) {
+        errorBox.textContent = error.message || '儲存實際休假失敗。';
+        errorBox.classList.remove('hidden');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+  modal.dataset.applicationId = application.id;
+  $('#actual-leave-person').textContent = `${application.user}｜原申請：${formatDate(application.requestedStart || application.start)} 至 ${formatDate(application.requestedEnd || application.end)}`;
+  $('#actual-leave-start').value = application.start;
+  $('#actual-leave-end').value = application.end;
+  $('#actual-leave-days').textContent = `${actualLeaveDays(application.start, application.end, application)} 天`;
+  $('#actual-leave-error').classList.add('hidden');
+  modal.classList.remove('hidden');
+}
+
+document.addEventListener('click', event => {
+  const button = event.target.closest?.('[data-edit-actual]');
+  if (!button || !isManager()) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const application = apps.find(item => item.id === button.dataset.editActual);
+  if (application) openActualLeaveEditor(application);
+}, true);
+
 function renderHistory(){const table=$('#history-records');if(!table)return;const profileList=Array.isArray(accounts)?accounts:[],system=apps.filter(a=>a.status==='approved').map(a=>({id:a.id,userId:a.userId,name:a.user,employeeNo:profileList.find(p=>p.uid===a.userId)?.id||'',plan:a.plan,start:a.start,end:a.end,days:a.days,approvedAt:a.approvedAt||'',source:'system'})),records=[...leaveHistory.filter(record=>!system.some(item=>item.id===record.id)),...system],visible=isManager()?records:records.filter(record=>record.userId===sessionUserId());table.innerHTML=visible.length?visible.sort((a,b)=>String(b.start||'').localeCompare(String(a.start||''))).map(record=>`<tr><td>${record.name||'未設定'}</td><td>${record.employeeNo||'—'}</td><td>${record.start&&record.end?`${formatDate(record.start)}<br>至 ${formatDate(record.end)}`:'—'}</td><td>${record.plan?planName(record.plan):'—'}</td><td>${record.days||'—'}</td><td>${record.approvedAt?String(record.approvedAt).slice(0,10):'—'}</td></tr>`).join(''):'<tr><td colspan="6">尚無歷年長假紀錄</td></tr>';}
 let historySelectedYear=null;
 function historySourceRecords(){const profileList=Array.isArray(accounts)?accounts:[],system=apps.filter(app=>app.status==='approved').map(app=>({id:app.id,userId:app.userId,name:app.user,employeeNo:profileList.find(person=>person.uid===app.userId)?.id||'',plan:app.plan,start:app.start,end:app.end,days:app.days,approvedAt:app.approvedAt||'',source:'system'})),records=[...leaveHistory.filter(record=>!system.some(item=>item.id===record.id)),...system];return (isManager()?records:records.filter(record=>record.userId===sessionUserId())).filter(record=>record.start&&record.end);}
@@ -364,7 +461,7 @@ const renderAccountsWithSorting=renderAccounts;renderAccounts=function(){renderA
 document.addEventListener('click',async event=>{const button=event.target.closest('[data-remove-employee]');if(!button)return;if(!isManager()){toast('只有主管可刪除人員。');return;}const uid=button.dataset.removeEmployee,account=accounts.find(item=>item.uid===uid);if(!account||uid===activeAccount?.uid){toast('無法刪除目前登入的主管帳號。');return;}if(!window.confirm(`確定刪除「${account.name}（${account.id}）」？帳號將停用並自人員清單移除，既有長假紀錄會保留。`))return;try{await window.firebaseBackend.removeEmployee(uid);await loadFirebaseData();toast(`${account.name} 已刪除；既有長假紀錄已保留。`);}catch(error){toast(error.message||'刪除人員失敗。');}});
 function enrichMyTable(){const rows=document.querySelectorAll('#my-applications tr'),mine=apps.filter(a=>a.userId===sessionUserId());rows.forEach((row,index)=>{const app=mine[index];if(app&&row.children.length===5){const cell=document.createElement('td');cell.textContent=app.submittedAt||'系統建檔';row.insertBefore(cell,row.children[0]);}});}
 function isManager(){return !!activeAccount&&['技術主任','系統管理者','director','admin'].includes(activeAccount.role);}
-function enrichReviewTable(manager){const table=$('#review-table');if(!table)return;table.classList.toggle('staff-review',!manager);document.querySelectorAll('#director-applications tr').forEach((row,index)=>{const app=apps[index];if(!app)return;const status=row.children[4];status.innerHTML=`${statusTag(app.status)}${app.checkPassed===false?'<br><span class="tag rejected">未檢核通過</span>':''}${app.approvedAt?`<br><small class="muted">核准日：${app.approvedAt}</small>`:''}`;if(manager&&row.children[5])row.children[5].innerHTML=`<div class="row-actions"><button class="mini-btn" data-action="approve" data-id="${app.id}">核准</button><button class="mini-btn danger" data-action="reject" data-id="${app.id}">駁回</button><button class="mini-btn" data-action="pending" data-id="${app.id}">改待審</button></div>`;});}
+function enrichReviewTable(manager){const table=$('#review-table');if(!table)return;table.classList.toggle('staff-review',!manager);document.querySelectorAll('#director-applications tr').forEach((row,index)=>{const app=apps[index];if(!app)return;const status=row.children[4],canEditActual=app.status==='approved'&&app.end<iso(new Date());status.innerHTML=`${statusTag(app.status)}${app.checkPassed===false?'<br><span class="tag rejected">未檢核通過</span>':''}${app.approvedAt?`<br><small class="muted">核准日：${app.approvedAt}</small>`:''}${app.actualEditedAt?'<br><small class="muted">實際休假已編修</small>':''}`;if(manager&&row.children[5])row.children[5].innerHTML=`<div class="row-actions"><button class="mini-btn" data-action="approve" data-id="${app.id}">核准</button><button class="mini-btn danger" data-action="reject" data-id="${app.id}">駁回</button><button class="mini-btn" data-action="pending" data-id="${app.id}">改待審</button>${canEditActual?`<button class="mini-btn" data-edit-actual="${app.id}">編修實際休假</button>`:''}</div>`;});}
 function applyPermissions(){const manager=isManager(),access=$('#access-nav'),login=$('#session-login'),logout=$('#session-logout'),reviewNav=$('#review-nav'),heading=$('#review-heading'),avatar=$('#session-avatar'),name=$('#session-name'),role=$('#session-role');if(access)access.style.display=manager?'':'none';document.querySelectorAll('.manager-only').forEach(el=>{if(!manager){el.style.display='none';return;}el.style.display=el.tagName==='TH'?'table-cell':el.tagName==='BUTTON'?'inline-block':'block';});if(reviewNav){reviewNav.style.display=manager?'':'none';reviewNav.innerHTML='<span>◫</span>主任管理';}if(heading)heading.textContent=manager?'主任管理':'審查狀態';if($('#director-view').classList.contains('active'))$('#page-title').textContent=manager?'主任管理':'審查狀態';if(login)login.classList.toggle('hidden',!!activeAccount);if(logout)logout.classList.toggle('hidden',!activeAccount);if(activeAccount){if(avatar)avatar.textContent=activeAccount.name.slice(0,1);if(name)name.textContent=activeAccount.name;if(role)role.textContent=activeAccount.jobTitle||activeAccount.roleText||activeAccount.role;}enrichReviewTable(manager);}
 function eventFor(day){ return apps.filter(a=>['pending','approved','lottery'].includes(a.status)&&a.start<=day&&a.end>=day); }
 function calendarTracks(monthStart,monthEnd){const visible=apps.filter(a=>['pending','approved','lottery'].includes(a.status)&&a.start<=monthEnd&&a.end>=monthStart).sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end)||String(a.user).localeCompare(String(b.user))),tracks=[],lanes=new Map();visible.forEach(event=>{let lane=tracks.findIndex(last=>last.end<event.start);if(lane<0)lane=tracks.length;tracks[lane]=event;lanes.set(event,lane);});return lanes;}

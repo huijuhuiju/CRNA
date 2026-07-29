@@ -49,7 +49,7 @@ async function syncLeaveHistory(applications) {
   const users = (await get(ref(database, "users"))).val() || {}, changes = {};
   approved.forEach((application) => {
     const person = users[application.userId] || {};
-    changes[`leaveHistory/${application.id}`] = { userId: application.userId, name: application.user || person.name || "未設定", employeeNo: person.employeeNo || "", plan: application.plan, start: application.start, end: application.end, days: application.days, approvedAt: application.approvedAt || application.updatedAt || new Date().toISOString(), source: "system" };
+    changes[`leaveHistory/${application.id}`] = { userId: application.userId, name: application.user || person.name || "未設定", employeeNo: person.employeeNo || "", plan: application.plan, start: application.start, end: application.end, days: application.days, requestedStart: application.requestedStart || application.start, requestedEnd: application.requestedEnd || application.end, requestedDays: application.requestedDays || application.days, actualEditedAt: application.actualEditedAt || null, actualEditedBy: application.actualEditedBy || null, approvedAt: application.approvedAt || application.updatedAt || new Date().toISOString(), source: "system" };
   });
   await update(ref(database), changes);
 }
