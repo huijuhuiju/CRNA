@@ -118,6 +118,7 @@ document.addEventListener('click', async event => {
     renderAll();
     toast('申請已刪除，資料庫與歷年紀錄已同步移除。');
   } catch (error) {
+    console.error('刪除長假申請失敗：', error);
     button.disabled = false;
     toast(error.message || '刪除申請失敗。');
   }
