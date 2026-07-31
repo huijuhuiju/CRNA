@@ -62,6 +62,15 @@
       <section class="view" id="mine-view">
         <div class="section-heading page-heading"><div><p class="eyebrow">MY REQUESTS</p><h2>我的長假申請</h2></div><button class="outline-button" data-view-target="apply">＋ 新增申請</button></div>
         <div id="my-summary" class="summary-row"></div>
+        <section class="card password-change-card">
+          <div><p class="eyebrow">ACCOUNT SECURITY</p><h3>修改個人密碼</h3><p class="muted">密碼只由 Firebase Authentication 安全處理，不會儲存於本系統資料庫。</p></div>
+          <form id="change-password-form" class="password-change-form">
+            <label>新密碼<input id="new-password" type="password" autocomplete="new-password" minlength="6" required /></label>
+            <label>確認新密碼<input id="confirm-new-password" type="password" autocomplete="new-password" minlength="6" required /></label>
+            <button class="primary-button" type="submit">儲存新密碼</button>
+            <p id="change-password-error" class="login-error hidden" role="alert"></p>
+          </form>
+        </section>
         <div class="card table-card"><table><thead><tr><th>提出日期</th><th>休假日期</th><th>方案</th><th>天數</th><th>狀態</th><th>操作</th></tr></thead><tbody id="my-applications"></tbody></table></div>
       </section>
 
@@ -86,7 +95,7 @@
   <div id="toast" class="toast" role="status"></div>
   <div id="manager-confirm-modal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="manager-confirm-title"><div class="confirm-card"><p class="eyebrow">APPLICATION REVIEW</p><h2 id="manager-confirm-title">請確認代送申請</h2><div id="manager-confirm-summary" class="confirm-summary"></div><p class="muted">此申請將以待審狀態送出；未通過檢核時會在狀態欄保留標示。</p><div class="confirm-actions"><button id="manager-cancel" class="outline-button" type="button">返回修改</button><button id="manager-confirm" class="primary-button" type="button">確認</button></div></div></div>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app.js?v=20260731-3"></script>
-  <script type="module" src="firebase-service.js?v=20260731-3"></script>
+  <script src="app.js?v=20260731-4"></script>
+  <script type="module" src="firebase-service.js?v=20260731-4"></script>
 </body>
 </html>

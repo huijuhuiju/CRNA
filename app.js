@@ -479,6 +479,21 @@ async function loadFirebaseData(){const data=await window.firebaseBackend.loadDa
 $('#login-form').addEventListener('submit',async e=>{e.preventDefault();const id=$('#login-id').value.trim(),pw=$('#login-password').value,errorBox=$('#login-error'),showError=message=>{errorBox.textContent=message;errorBox.classList.remove('hidden');};errorBox.classList.add('hidden');if(!window.firebaseBackend?.enabled){showError('系統正在連線，請稍後再試。');return;}try{activeAccount=await window.firebaseBackend.login(id,pw);await loadFirebaseData();$('#login-panel').classList.add('hidden');renderAll();toast(`已以${activeAccount.roleText||activeAccount.role}身分登入。`);}catch(error){activeAccount=null;const message=error.code==='auth/invalid-credential'?'登入失敗：員工編號／Email 或密碼不正確。':error.code==='auth/user-disabled'?'登入失敗：此帳號已停用，請聯絡主管。':(error.message||'登入失敗，請稍後再試。');showError(message);}});
 ['#login-id','#login-password'].forEach(selector=>$(selector).addEventListener('input',()=>$('#login-error').classList.add('hidden')));
 $('#toggle-login-password').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();const input=$('#login-password'),button=$('#toggle-login-password'),visible=input.type==='text';input.type=visible?'password':'text';button.classList.toggle('is-visible',!visible);button.textContent=visible?'🌷':'🌸';button.setAttribute('aria-pressed',String(!visible));button.setAttribute('aria-label',visible?'顯示密碼':'隱藏密碼');button.title=visible?'顯示密碼':'隱藏密碼';input.focus();});
+$('#change-password-form')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const password=$('#new-password').value,confirmation=$('#confirm-new-password').value,errorBox=$('#change-password-error');
+  const showError=message=>{errorBox.textContent=message;errorBox.classList.remove('hidden');};
+  errorBox.classList.add('hidden');
+  if(password.length<6){showError('新密碼至少需要 6 個字元。');return;}
+  if(password!==confirmation){showError('兩次輸入的新密碼不一致。');return;}
+  try{
+    await window.firebaseBackend.changeOwnPassword(password);
+    event.target.reset();
+    toast('個人密碼已更新。請妥善保管新密碼。');
+  }catch(error){
+    showError(error.code==='auth/requires-recent-login'?'為保障帳號安全，請先登出再以目前密碼重新登入後修改。':(error.message||'密碼修改失敗，請稍後再試。'));
+  }
+});
 $('#session-login').addEventListener('click',()=>{$('#login-panel').classList.remove('hidden');});
 $('#session-logout').addEventListener('click',async()=>{try{await window.firebaseBackend?.logout();}catch(error){console.error(error)}activeAccount=null;$('#login-password').value='';$('#login-panel').classList.remove('hidden');showView('apply');renderAll();toast('您已登出系統。');});
 $('#account-form').addEventListener('submit',async e=>{e.preventDefault();if(!isManager()){toast('只有技術主任或系統管理者可建立人員帳號，請先以主管帳號登入。');return;}const name=$('#account-name').value.trim(),id=$('#account-id').value.trim(),jobTitle=$('#account-role').value,password=$('#account-password').value,employedAt=$('#account-employed-at')?.value;if(!employedAt){toast('請輸入到職日期。');return;}if(accounts.some(a=>a.id===id)){toast('此員工編號已存在。');return;}try{await window.firebaseBackend.createEmployee({name,employeeNo:id,jobTitle,password,employedAt});await loadFirebaseData();e.target.reset();toast('帳號已建立，可用員工編號與個人密碼登入。');}catch(error){toast(error.message||'建立帳號失敗。');}});

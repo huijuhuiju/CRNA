@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updatePassword } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 import { firebaseConfig } from "./firebase/firebase-config.js";
 
@@ -99,6 +99,12 @@ async function deleteLongLeaveApplication(id) {
 async function uploadHospitalCalendarPdf(year, file) { if (!auth.currentUser) throw new Error("請先以主管帳號登入。"); if (!file || file.type !== "application/pdf") throw new Error("請選擇 PDF 格式的院方行事曆。"); const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_"); const path = `hospitalCalendars/${year}/${Date.now()}_${safeName}`; const target = storageRef(storage, path); await uploadBytes(target, file, { contentType: "application/pdf" }); return { fileName: file.name, pdfUrl: await getDownloadURL(target), storagePath: path, uploadedAt: new Date().toISOString() }; }
 async function updateEmploymentDates(entries) { const users = (await get(ref(database, "users"))).val() || {}, changes = {}, existing = Object.entries(users); entries.forEach(entry => { const match = existing.find(([, person]) => String(person.employeeNo).toUpperCase() === String(entry.employeeNo).toUpperCase()); if (match && entry.employedAt) changes[`users/${match[0]}/employedAt`] = entry.employedAt; }); await update(ref(database), changes); return { updated: Object.keys(changes).length, total: entries.length }; }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, removeEmployee, updateEmploymentDates, saveCourseSchedule, saveHospitalCalendar, uploadHospitalCalendarPdf };
+async function changeOwnPassword(newPassword) {
+  if (!auth.currentUser) throw new Error("請先登入後再修改密碼。");
+  if (typeof newPassword !== "string" || newPassword.length < 6) throw new Error("新密碼至少需要 6 個字元。");
+  await updatePassword(auth.currentUser, newPassword);
+}
+
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, removeEmployee, updateEmploymentDates, changeOwnPassword, saveCourseSchedule, saveHospitalCalendar, uploadHospitalCalendarPdf };
 window.firebaseBackend.deleteLongLeaveApplication = deleteLongLeaveApplication;
 window.dispatchEvent(new Event("firebase-ready"));
