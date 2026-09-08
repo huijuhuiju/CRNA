@@ -8,9 +8,9 @@ const auth = getAuth(app);
 const database = getDatabase(app);
 const loginDomain = "crna-61e20.firebaseapp.com";
 const authEmail = (account) => { const value = String(account).trim(); return value.includes("@") ? value : `${value.toLowerCase()}@${loginDomain}`; };
-const roleForTitle = (jobTitle) => jobTitle === "技術主任" ? "director" : jobTitle === "系統管理者" ? "admin" : "staff";
+const roleForTitle = (jobTitle) => jobTitle === "技術主任" ? "director" : jobTitle === "系統管理者" ? "admin" : jobTitle === "CV Leader" ? "cvLeader" : "staff";
 const groupForTitle = (jobTitle) => (["麻醉專科護理師", "麻醉訓練專科護理師", "事務員"].includes(jobTitle) ? "clinical" : jobTitle === "護理師" ? "nursing" : jobTitle === "助理員" ? "assistant" : null);
-const roleText = (role) => ({ staff: "人員", director: "技術主任", admin: "系統管理者" }[role] || role);
+const roleText = (role) => ({ staff: "人員", director: "技術主任", admin: "系統管理者", cvLeader: "CV Leader" }[role] || role);
 const fallbackJobTitle = (employeeNo, role) => String(employeeNo) === "3851" ? "麻醉專科護理師" : roleText(role);
 const profileShape = (uid, data) => ({ uid, id: data.employeeNo, name: data.name, role: data.role, roleText: roleText(data.role), jobTitle: data.jobTitle || fallbackJobTitle(data.employeeNo, data.role), bookingGroup: data.bookingGroup || groupForTitle(data.jobTitle || fallbackJobTitle(data.employeeNo, data.role)), employedAt: data.employedAt, probationPassed: !!data.probationPassed, employmentStatus: data.employmentStatus || (data.active === false ? "離職" : "在職"), active: data.active !== false });
 
@@ -22,6 +22,13 @@ async function profileFor(uid) {
 }
 
 async function loadData() {
+  const ownProfileSnapshot = auth.currentUser ? await get(ref(database, `users/${auth.currentUser.uid}`)).catch(() => null) : null;
+  const ownProfile = ownProfileSnapshot?.val?.() || {};
+  // CV Leaders deliberately receive only their own profile and course data.
+  if (ownProfile.role === "cvLeader") {
+    const courseData = await get(ref(database, "courseSchedules")).catch(() => ({ val: () => null }));
+    return { accounts: [profileShape(auth.currentUser.uid, ownProfile)], applications: [], hospitalCalendars: {}, leaveHistory: [], courseSchedules: courseData.val() || {} };
+  }
   const [userData, applicationData, calendarsData, legacyCalendarData, historyData, courseData] = await Promise.all([get(ref(database, "users")), get(ref(database, "applications")), get(ref(database, "settings/hospitalCalendars")).catch(() => ({ val: () => null })), get(ref(database, "settings/hospitalCalendar/115")).catch(() => ({ val: () => null })), get(ref(database, "leaveHistory")).catch(() => ({ val: () => null })), get(ref(database, "courseSchedules")).catch(() => ({ val: () => null }))]);
   const users = userData.val() || {}, applications = applicationData.val() || {}, currentProfile = users[auth.currentUser?.uid];
   if (["director", "admin"].includes(currentProfile?.role)) { const hu = Object.entries(users).find(([, profile]) => String(profile.employeeNo) === "3851"); if (hu && hu[1].jobTitle !== "麻醉專科護理師") await update(ref(database), { [`users/${hu[0]}/jobTitle`]: "麻醉專科護理師", [`users/${hu[0]}/bookingGroup`]: "clinical", [`users/${hu[0]}/updatedAt`]: new Date().toISOString() }).catch(error => console.warn("職稱同步將於下次主管操作時重試", error)); }
@@ -81,7 +88,7 @@ async function bulkCreateEmployees(entries, hospitalCalendar) {
 async function updateEmploymentStatus(uid, employmentStatus) { const enabled = employmentStatus !== "離職"; await update(ref(database, `users/${uid}`), { employmentStatus, active: enabled, updatedAt: new Date().toISOString() }); }
 async function updateEmployee(uid, { name, jobTitle, employedAt, employmentStatus }) { const status = employmentStatus || "在職"; await update(ref(database, `users/${uid}`), { name, jobTitle, role: roleForTitle(jobTitle), bookingGroup: groupForTitle(jobTitle), employedAt, employmentStatus: status, active: status !== "離職", updatedAt: new Date().toISOString() }); }
 async function removeEmployee(uid) { await update(ref(database, `users/${uid}`), { employmentStatus: "deleted", active: false, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); }
-async function saveCourseSchedule(year, schedule) { if (!auth.currentUser) throw new Error("請先登入主管帳號。"); const data = { ...schedule, year: Number(year), uploadedBy: auth.currentUser.uid, uploadedAt: new Date().toISOString() }; await set(ref(database, `courseSchedules/${year}`), data); return data; }
+async function saveCourseSchedule(year, schedule) { if (!auth.currentUser) throw new Error("請先登入後再上傳班表。"); const profile = (await get(ref(database, `users/${auth.currentUser.uid}`))).val() || {}; if (!["director", "admin", "cvLeader"].includes(profile.role)) throw new Error("只有主管或 CV Leader 可上傳 CV course 班表。"); const data = { ...schedule, year: Number(year), uploadedBy: auth.currentUser.uid, uploadedByName: profile.name || "CV Leader", uploadedAt: new Date().toISOString() }; await set(ref(database, `courseSchedules/${year}`), data); return data; }
 async function saveHospitalCalendar(year, calendar) { const data = { ...calendar, year: Number(year), updatedAt: new Date().toISOString() }; await update(ref(database), { [`settings/hospitalCalendars/${year}`]: data, [`settings/hospitalCalendar/${year}`]: data }); }
 async function deleteLongLeaveApplication(id) {
   if (!auth.currentUser) throw new Error("請先登入主管帳號。");
@@ -105,6 +112,20 @@ async function changeOwnPassword(newPassword) {
   await updatePassword(auth.currentUser, newPassword);
 }
 
-window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, removeEmployee, updateEmploymentDates, changeOwnPassword, saveCourseSchedule, saveHospitalCalendar, uploadHospitalCalendarPdf };
+async function clearTrialLeaveData() {
+  if (!auth.currentUser) throw new Error("請先以主管帳號登入。");
+  const profile = (await get(ref(database, `users/${auth.currentUser.uid}`))).val() || {};
+  if (!["director", "admin"].includes(profile.role)) throw new Error("只有主管可清空測試長假申請。");
+  const [applicationsSnapshot, historySnapshot] = await Promise.all([get(ref(database, "applications")), get(ref(database, "leaveHistory"))]);
+  const applications = applicationsSnapshot.val() || {}, history = historySnapshot.val() || {}, changes = {};
+  Object.keys(applications).forEach(id => { changes[`applications/${id}`] = null; });
+  Object.entries(history).forEach(([id, entry]) => {
+    if (Object.prototype.hasOwnProperty.call(applications, id) || entry?.source === "system") changes[`leaveHistory/${id}`] = null;
+  });
+  if (Object.keys(changes).length) await update(ref(database), changes);
+  return { applications: Object.keys(applications).length, history: Object.keys(changes).filter(path => path.startsWith("leaveHistory/")).length };
+}
+
+window.firebaseBackend = { enabled: true, async login(account, password) { const credential = await signInWithEmailAndPassword(auth, authEmail(account), password); return profileFor(credential.user.uid); }, logout: () => signOut(auth), loadData, syncApplications, syncLeaveHistory, createEmployee, bulkCreateEmployees, updateEmploymentStatus, updateEmployee, removeEmployee, updateEmploymentDates, changeOwnPassword, clearTrialLeaveData, saveCourseSchedule, saveHospitalCalendar, uploadHospitalCalendarPdf };
 window.firebaseBackend.deleteLongLeaveApplication = deleteLongLeaveApplication;
 window.dispatchEvent(new Event("firebase-ready"));

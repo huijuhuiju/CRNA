@@ -3,23 +3,24 @@
     ".read": false,
     ".write": false,
     "users": {
-      ".read": "auth != null",
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() !== 'cvLeader'",
       "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() !== 'cvLeader')",
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "applications": {
-      ".read": "auth != null",
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() !== 'cvLeader'",
       "$applicationId": {
-        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.child('applicantId').val() === auth.uid) || (data.child('applicantId').val() === auth.uid && data.child('status').val() === 'pending'))"
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() !== 'cvLeader' && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.child('applicantId').val() === auth.uid) || (data.child('applicantId').val() === auth.uid && data.child('status').val() === 'pending'))"
       }
     },
     "courseSchedules": {
       ".read": "auth != null",
-      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'cvLeader')"
     },
     "leaveHistory": {
-      ".read": "auth != null",
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() !== 'cvLeader'",
       ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'director' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
     },
     "settings": {

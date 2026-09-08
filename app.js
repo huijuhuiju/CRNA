@@ -526,3 +526,59 @@ function normalizeImportRow(row){const aliases={employeeNo:['員工編號','員�
 async function readStaffImport(file){if(file.name.toLowerCase().endsWith('.json')){const payload=JSON.parse(await file.text());return payload.employees||[];}if(file.name.toLowerCase().endsWith('.xlsx')){if(!window.XLSX)throw new Error('Excel 匯入元件尚未載入，請確認網路後重新整理。');const book=window.XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}),sheetName=book.SheetNames.find(name=>window.XLSX.utils.sheet_to_json(book.Sheets[name],{header:1,defval:''}).some(row=>row.includes('到職日')||row.includes('到職日期')))||book.SheetNames[0],rows=window.XLSX.utils.sheet_to_json(book.Sheets[sheetName],{defval:'',raw:false,dateNF:'yyyy-mm-dd'}),entries=rows.map(normalizeImportRow).filter(row=>row.employeeNo||row.name||row.password||row.jobTitle||row.employedAt);if(entries.every(row=>row.employedAt&&!row.password)){entries.forEach(row=>{const d=new Date(row.employedAt);if(!Number.isNaN(d))row.employedAt=d.toISOString().slice(0,10);});return entries;}const incomplete=entries.find(row=>!row.employeeNo||!row.name||!row.password||!row.jobTitle);if(incomplete)throw new Error('Excel 每筆資料都必須包含：員工編號、姓名、密碼、職稱。');return entries;}throw new Error('僅接受 .xlsx 或 .json 人員匯入檔。');}
 $('#staff-import-file').addEventListener('change',async e=>{const file=e.target.files[0],status=$('#staff-import-status');if(!file)return;if(!isManager()){status.textContent='匯入未執行：只有技術主任或系統管理者可批次建立人員帳號，請先以主管帳號登入。';e.target.value='';return;}try{const entries=await readStaffImport(file);if(!entries.length)throw new Error('找不到人員資料。');if(entries.every(row=>row.employedAt&&!row.password)){status.textContent=`正在依員工編號更新 ${entries.length} 筆到職日…`;const result=await window.firebaseBackend.updateEmploymentDates(entries);await loadFirebaseData();status.textContent=`完成：已更新 ${result.updated} / ${result.total} 筆到職日。`;toast(status.textContent);return;}if(!confirm(`將建立 ${entries.length} 個 Firebase 帳號並寫入人員資料，是否繼續？`))return;status.textContent=`正在建立 ${entries.length} 個帳號，請勿關閉頁面…`;const results=await window.firebaseBackend.bulkCreateEmployees(entries,hospitalCalendar115),failed=results.filter(r=>!r.ok);await loadFirebaseData();status.textContent=failed.length?`完成；${results.length-failed.length} 筆成功、${failed.length} 筆需處理。`:`完成：已建立 ${results.length} 筆人員帳號並同步 115 年行事曆。`;toast(status.textContent);}catch(error){status.textContent=`匯入失敗：${error.message||error}`;}});
 document.addEventListener('submit',e=>{if(e.target.id!=='manager-request-form')return;const personId=$('#manager-person').value,conflicts=groupCapacityDates($('#manager-start').value,$('#manager-end').value,personId);if(conflicts.length){e.preventDefault();e.stopImmediatePropagation();toast('同職群每日可預約人數已達 2 人上限，請調整日期。');}},true);
+
+// CV Leader has a deliberately narrow permission: access to the CV upload card
+// only.  Account, calendar and long-leave administration remain manager-only.
+function isCourseUploader(){return !!activeAccount&&['技術主任','系統管理者','director','admin','CV Leader','cvLeader'].includes(activeAccount.role||activeAccount.jobTitle);}
+const applyPermissionsWithCvLeader=applyPermissions;
+applyPermissions=function(){
+  applyPermissionsWithCvLeader();
+  const cvLeader=isCourseUploader()&&!isManager();
+  if(!cvLeader)return;
+  $('#access-nav').style.display='';
+  document.querySelectorAll('.nav-link').forEach(button=>{if(button.id!=='access-nav')button.style.display='none';});
+  ['#account-management-card','#person-lookup-card','#connection-card','#hospital-calendar-card'].forEach(selector=>$(selector)?.style.setProperty('display','none'));
+  $('#course-upload-card')?.style.setProperty('display','block');
+  if(!$('#access-view').classList.contains('active'))showView('access');
+};
+if(typeof accountRoleOrder!=='undefined')accountRoleOrder['CV Leader']=1;
+
+// The existing manager upload handler stays unchanged. This capture handler
+// enables the same upload workflow for CV Leaders without granting any other
+// administrative actions.
+document.addEventListener('click',async event=>{
+  const button=event.target.closest('#upload-course-schedule');
+  if(!button||isManager()||!isCourseUploader())return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const input=$('#course-file'),status=$('#course-file-status'),file=input?.files?.[0];
+  if(!file){toast('請先選擇 CV course 班表檔案。');return;}
+  try{
+    button.disabled=true;button.textContent='上傳中…';
+    const isCsv=file.name.toLowerCase().endsWith('.csv');
+    const source=isCsv?await file.text():await file.arrayBuffer();
+    const book=window.XLSX.read(source,{type:isCsv?'string':'array',cellDates:true});
+    const sheets=book.SheetNames.map(name=>({name,rows:window.XLSX.utils.sheet_to_json(book.Sheets[name],{header:1,defval:'',raw:false,dateNF:'yyyy-mm-dd'}).filter(row=>row.some(cell=>String(cell).trim()!==''))})).filter(sheet=>sheet.rows.length);
+    if(!sheets.length)throw new Error('班表檔案沒有可匯入的資料。');
+    const match=file.name.match(/(?:^|\D)(1\d{2})(?:\D|$)/),year=match?Number(match[1]):115;
+    const saved=await window.firebaseBackend.saveCourseSchedule(year,{fileName:file.name,fileType:file.name.split('.').pop().toLowerCase(),sheets});
+    const uploadedAt=new Intl.DateTimeFormat('zh-TW',{dateStyle:'medium',timeStyle:'short',hour12:false}).format(new Date(saved.uploadedAt));
+    status.textContent=`完成：${year} 年度 CV course 班表已同步（${sheets.length} 個工作表）。上傳日期：${uploadedAt}`;
+    toast('CV course 班表已上傳並同步資料庫。');
+  }catch(error){status.textContent=`上傳失敗：${error.message||error}`;}
+  finally{button.disabled=false;button.textContent='上傳並同步班表';}
+},true);
+
+document.addEventListener('click',async event=>{
+  const button=event.target.closest('#clear-trial-applications');
+  if(!button)return;
+  if(!isManager()){toast('只有主管可清空測試長假申請。');return;}
+  const confirmation=window.prompt('此操作會永久清除所有目前長假申請與系統產生的歷年紀錄。\n請輸入「正式清空」以繼續：');
+  if(confirmation!=='正式清空')return;
+  try{
+    button.disabled=true;button.textContent='清空中…';
+    const result=await window.firebaseBackend.clearTrialLeaveData();
+    await loadFirebaseData();
+    toast(`已清空 ${result.applications} 筆長假申請及 ${result.history} 筆系統歷年紀錄。`);
+  }catch(error){toast(error.message||'清空測試資料失敗。');}
+  finally{button.disabled=false;button.textContent='清空測試申請';}
+});
